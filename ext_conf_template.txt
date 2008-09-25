@@ -1,0 +1,44 @@
+# cat=basic/enable; type=boolean; label=CSS Merging: Enables merging of your CSS content
+cssCombine = 1
+
+# cat=basic/enable; type=boolean; label=Replace CSS Import Rules: Enables replacing of css import rules (sometimes needed for hacks)
+cssReplaceImport = 1
+
+# cat=basic/enable; type=boolean; label=CSSTidy (Cleanup/Reformatting): Enable to get a cleanup/reformatting by csstidy
+csstidy = 1
+
+# cat=basic/enable; type=boolean; label=Preserve CSS: Enable to get a failsafe cleanup by csstidy (but preserves e.g. comments)
+csstidy.preserveCSS = 1
+
+# cat=basic/enable; type=options[Default=default,High=high_compression]; label=CSS Compression: You can choose between a default or high compression. The default compression enables more readability and the high compression a much smaller file.
+csstidy.compression = high_compression
+
+# cat=basic/enable; type=boolean; label=JS Merging: Enables merging of your JS content
+jsCombine = 1
+
+# cat=basic/enable; type=boolean; label=JSMin (Minification of JS, PHP 5!): Enable to get a minification by JSMin (requires PHP 5)
+jsmin = 1
+
+# cat=basic/enable; type=boolean; label=Merge JS in Body: You can choose to parse body javascript references too, but be prepared that the option could cause problems in some installations.
+jsParseBodyScripts = 0
+
+# cat=basic/enable; type=boolean; label=CSS Images to Base64: Terminates any requests needed for images defined in the css code by using the data uri syntax. Doesnt work in Internet Explorer 6 + 7!
+img2Base64 = 0
+
+# cat=basic/enable; type=boolean; label=Disable Output Hook: Set this to true if you dont want to merge non-cached scripts! The processing is only executed if non-cached scripts exists at the page.
+disableOutputHook = 0
+
+# cat=basic; type=options[Normal=normal,Base64=base64,inDoc=inDoc]; label=CSS Output Type: Sets merged css as file links or directly into the final document. By activating base64 output all requests of css files and image calls in such files are eliminated, but beware it doesnt work in Internet Explorer 6 and 7!
+cssOutputType = normal
+
+# cat=basic; type=string; label=CSS Ignore List: Add any filename to this comma separated list which you dont want to merge (Example: base.+\.css for any filename which begins with base and ends with .css). Note that wildcards are allowed (pcre syntax).
+cssIgnoreList =
+
+# cat=basic; type=options[Normal=normal,Base64=base64]; label=JS Output Type: Sets merged js files as script tags into the final document. By activating base64 output the last js file request would be eliminatedi, but beware it doesnt work in Internet Explorer 6 and 7!
+jsOutputType = normal
+
+# cat=basic; type=string; label=JS Ignore List: Add any filename to this comma separated list which you dont want to merge (Example: slimbox.+\.js for any filename which begins with slimbox and ends with .css). Note that wildcards are allowed (pcre syntax).
+jsIgnoreList =
+
+# cat=basic/file; type=string; label=Cache File Directory: Directory which contains the cached files (ending slash is required)
+cachePath = typo3temp/scriptmerger/
