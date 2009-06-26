@@ -3,7 +3,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 2007 Stefan Galinski <Stefan.Galinski@frm2.tum.de>
+*  (c) 2007 Stefan Galinski <stefan.galinski@gmail.com>
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -28,18 +28,18 @@
  * get the whole external code. Should reduce the initial loading time of
  * a page dramatically.
  *
- * @author Stefan Galinski <stefan.galinski@frm2.tum.de>
+ * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
 
-/// css tidy inlcusion
-require_once('res/csstidy/class.csstidy.php');
+/** css tidy inclusion */
+require_once('resources/csstidy/class.csstidy.php');
 
 /**
  * Could be used to merge css and js files. Now only two requests are needed to
  * get the whole external code. Should reduce the initial loading time of
  * a page dramatically.
  *
- * @author Stefan Galinski <stefan.galinski@frm2.tum.de>
+ * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
 class tx_scriptmerger
 {
@@ -106,8 +106,9 @@ class tx_scriptmerger
 			t3lib_div::mkdir(PATH_site . $this->extConfig['cachePath']);
 
 		// include js min (only for PHP5)
-		if ($this->extConfig['jsmin'])
-			require_once('res/jsmin-1.1.0.php');
+		if ($this->extConfig['jsmin'] && !class_exists('JSMin')) {
+			require_once('resources/jsmin/jsmin-1.1.1.php');
+		}
 	}
 
 	/**
