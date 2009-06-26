@@ -31,9 +31,6 @@
  * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
 
-/** css tidy inclusion */
-require_once('resources/csstidy/class.csstidy.php');
-
 /**
  * Could be used to merge css and js files. Now only two requests are needed to
  * get the whole external code. Should reduce the initial loading time of
@@ -41,8 +38,9 @@ require_once('resources/csstidy/class.csstidy.php');
  *
  * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
-class tx_scriptmerger
-{
+class tx_scriptmerger {
+//	static $called = false;
+
 	/** @var $extConfig array holds the extension configuration */
 	var $extConfig = array();
 
@@ -61,12 +59,16 @@ class tx_scriptmerger
 	/**
 	 * Constructor
 	 *
-	 * Prepares the extension configuration array!
+	 *  Initializes some variables and prepares the extension configuration!
 	 *
 	 * @return void
 	 */
-	function tx_scriptmerger()
-	{
+	public function __construct() {
+		// this class needs to be called only once
+//		if (self::$called) {
+//			return true;
+//		}
+
 		// amount of instances (needed for hook count)
 		if (!$instances)
 			static $instances = 0;
@@ -76,38 +78,53 @@ class tx_scriptmerger
 			return false;
 		++$instances;
 
+		// global extension configuration
 		$this->extConfig =
 			unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['scriptmerger']);
-		if (is_array($GLOBALS['TSFE']->tmpl->setup['config.']['tx_scriptmerger.']))
-			foreach ($GLOBALS['TSFE']->tmpl->setup['config.']['tx_scriptmerger.'] as $key => $value)
+			
+		// typoscript extension configuration
+		// @todo config. -> plugin.
+		$tsSetup = $GLOBALS['TSFE']->tmpl->setup['config.']['tx_scriptmerger.'];
+		if (is_array($tsSetup)) {
+			foreach ($tsSetup as $key => $value) {
 				$this->extConfig[$key] = $value;
+			}
+		}
 
 		// if the whole css content should be base64 encoded then images needs to be encoded too
-		if ($this->extConfig['cssOutputType'] == 'base64')
-			$this->extConfig['img2Base64'] = 1;
+		if ($this->extConfig['cssOutputType'] == 'base64') {
+			$this->extConfig['img2Base64'] = true;
+		}
 
-		// string to array (ignore lists)
-		$this->extConfig['jsIgnoreList'] = !empty($this->extConfig['jsIgnoreList']) ?
-			explode(',', $this->extConfig['jsIgnoreList']) : array();
-		$this->extConfig['jsIgnoreList'][] = '.+\?.+'; // any link with parameters
-		$this->extConfig['jsIgnoreList'][] = 'scriptaculous.*.js';
-		for ($i = 0; $i < count($this->extConfig['jsIgnoreList']); ++$i)
+		// javascript ignore list
+		$this->extConfig['jsIgnoreList'] = explode(',', $this->extConfig['jsIgnoreList']);
+		$this->extConfig['jsIgnoreList'][] = '.+\?.+'; // any <link> tag with parameters
+		$this->extConfig['jsIgnoreList'][] = 'scriptaculous.*.js'; // @todo remove me
+		for ($i = 0; $i < count($this->extConfig['jsIgnoreList']); ++$i) {
 			$this->extConfig['jsIgnoreList'][$i] =
 				addcslashes($this->extConfig['jsIgnoreList'][$i], '/\'');
+		}
 
-		$this->extConfig['cssIgnoreList'] = !empty($this->extConfig['cssIgnoreList']) ?
-			explode(',', $this->extConfig['cssIgnoreList']) : array();
-		for ($i = 0; $i < count($this->extConfig['cssIgnoreList']); ++$i)
+		// css ignore list
+		$this->extConfig['cssIgnoreList'] = explode(',', $this->extConfig['cssIgnoreList']);
+		for ($i = 0; $i < count($this->extConfig['cssIgnoreList']); ++$i) {
 			$this->extConfig['cssIgnoreList'][$i] =
 				addcslashes($this->extConfig['cssIgnoreList'][$i], '/\'');
+		}
 
 		// create cache directory
-		if (!is_dir(PATH_site . $this->extConfig['cachePath']))
+		if (!is_dir(PATH_site . $this->extConfig['cachePath'])) {
 			t3lib_div::mkdir(PATH_site . $this->extConfig['cachePath']);
+		}
 
-		// include js min (only for PHP5)
+		// include jsmin if should be used and it's not already loaded by TYPO3
 		if ($this->extConfig['jsmin'] && !class_exists('JSMin')) {
 			require_once('resources/jsmin/jsmin-1.1.1.php');
+		}
+
+		// include csstidy if it should be used
+		if ($this->extConfig['csstidy']) {
+			require_once('resources/csstidy/class.csstidy.php');
 		}
 	}
 
@@ -116,8 +133,12 @@ class tx_scriptmerger
 	 *
 	 * @return bool true or false
 	 */
-	function main()
-	{
+	function main() {
+		// this method should be called only once!
+//		if (self::$called) {
+//			return true;
+//		}
+//		self::$called = true;
 
 		// disables scriptmerger functionality for some special pages or debug purposes
 		if ($this->extConfig['disable'])
@@ -150,8 +171,7 @@ class tx_scriptmerger
 	 * @param $cssFiles array css files (Structure: $cssFiles[screen|print] = file)
 	 * @return boolean true or false
 	 */
-	function setCSSfiles($cssFiles)
-	{
+	function setCSSfiles($cssFiles) {
 		$add = '';
 		foreach ($cssFiles as $media => $file) {
 			if ($this->extConfig['cssOutputType'] != 'inDoc') {
@@ -159,7 +179,7 @@ class tx_scriptmerger
 					$file = 'data:text/css;base64,' .
 						base64_encode(file_get_contents(PATH_site . $file));
 				$add .= '<link rel="stylesheet" type="text/css" media="' .
-					$media . '" href="' . $file . '" />' . "\n";
+					$media . '" href="' . $GLOBALS['TSFE']->absRefPrefix . $file . '" />' . "\n";
 			} else
 				$add .= '<style type="text/css" media="' . $media . '">' . "\n" . '/*<![CDATA[*/' . "\n" .
 					file_get_contents(PATH_site . $file) . "\n" . '/*]]>*/' . "\n" . '</style>' . "\n";
@@ -180,14 +200,13 @@ class tx_scriptmerger
 	 * @param $jsFile string js file
 	 * @return boolean true or false
 	 */
-	function setJSfiles($jsFile)
-	{
+	function setJSfiles($jsFile) {
 		if ($this->extConfig['jsOutputType'] == 'base64')
 			$jsFile = 'data:text/javascript;base64,' .
 				base64_encode(file_get_contents(PATH_site . $jsFile));
 
 		$pattern = '/\<!--HD_.+--\>|\<\/head\>/isU';
-		$replace = '<script type="text/javascript" src="' . $jsFile . '"></script>' . "\n" . '\0';
+		$replace = '<script type="text/javascript" src="' . $GLOBALS['TSFE']->absRefPrefix . $jsFile . '"></script>' . "\n" . '\0';
 		$GLOBALS['TSFE']->content =
 			preg_replace($pattern, $replace, $GLOBALS['TSFE']->content, 1);
 
@@ -199,9 +218,8 @@ class tx_scriptmerger
 	 *
 	 * @return string final js file
 	 */
-	function prepJSfiles()
-	{
-		// write files back to the document
+	function prepJSfiles() {
+	// write files back to the document
 		$fileContent = '';
 		foreach($this->jsFiles as $jsFile) {
 			$prefix = !t3lib_div::isFirstPartOfStr($jsFile, 'http://') &&
@@ -231,8 +249,7 @@ class tx_scriptmerger
 	 *
 	 * @return array final css files (Structure: $cssFiles[screen|print][1-n] = file)
 	 */
-	function prepCSSfiles()
-	{
+	function prepCSSfiles() {
 		// init csstidy
 		if ($this->extConfig['csstidy']) {
 			$this->cssTidy = new csstidy();
@@ -244,13 +261,12 @@ class tx_scriptmerger
 
 		// write files back to the document
 		$finalCSSfiles = array();
-		foreach($this->cssFiles as $media => $files)
-		{
+		foreach($this->cssFiles as $media => $files) {
 			// get final filename
 			$fileContent = '';
 			foreach($files as $cssFile) {
 				$prefix = !t3lib_div::isFirstPartOfStr($cssFile, 'http://') &&
-					!t3lib_div::isFirstPartOfStr($jsFile, 'https://') ? PATH_site : '';
+					!t3lib_div::isFirstPartOfStr($cssFile, 'https://') ? PATH_site : '';
 				$fileContent .= file_get_contents($prefix . $cssFile) . "\n";
 			}
 			$finalCSSfiles[$media] = $this->extConfig['cachePath'] .
@@ -264,7 +280,7 @@ class tx_scriptmerger
 			$fileContent = '';
 			foreach($files as $cssFile) {
 				$prefix = !t3lib_div::isFirstPartOfStr($cssFile, 'http://') &&
-					!t3lib_div::isFirstPartOfStr($jsFile, 'https://') ? PATH_site : '';
+					!t3lib_div::isFirstPartOfStr($cssFile, 'https://') ? PATH_site : '';
 				$fileContent .= $this->replaceCSSurl(file_get_contents($prefix .
 					$cssFile), $cssFile) . "\n";
 			}
@@ -292,8 +308,7 @@ class tx_scriptmerger
 	 *
 	 * @return array css files (Structure: $cssFiles[screen|print][1-n] = file)
 	 */
-	function getCSSfiles()
-	{
+	function getCSSfiles() {
 		$cssFiles = array();
 		$ccomments = array();
 		$matches = array();
@@ -315,7 +330,6 @@ class tx_scriptmerger
 			').+?\2.*?' .												// \2 holds type condition result (text/css or nothing)
 			'(?:\/\>|\<\/style\>)[\c\s' . "\n\r\t" . ']*' .		// until node end is reached
 			'/is';
-
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $matches);
 		//t3lib_div::debug($matches);
 		if (!count($matches))
@@ -332,8 +346,7 @@ class tx_scriptmerger
 		// parse matches
 		$length = count($matches[0]);
 		$inDoc = array();
-		for ($i = 0; $i < $length; ++$i)
-		{
+		for ($i = 0; $i < $length; ++$i) {
 			$media = !empty($matches[3][$i]) ? $matches[3][$i] : 'screen';
 
 			// inDoc styles must be parsed to get only the css content
@@ -347,7 +360,7 @@ class tx_scriptmerger
 					'/is';										// no ungreedy modifier (causes problems)
 
 				preg_match_all($pattern, $matches[0][$i], $content);
-				//t3lib_div::debug($content);
+//				t3lib_div::debug($content);
 				$inDoc[$media] .= $content[1][0] . "\n";
 
 			} elseif ($matches[1][$i] == 'link') {
@@ -360,9 +373,16 @@ class tx_scriptmerger
 
 				// check the ignore list
 				$test = false;
-				foreach($this->extConfig['cssIgnoreList'] as $ignoreMatch)
-					if ($test = preg_match('/' . $ignoreMatch . '/i', basename($matches[4][$i])))
+				foreach($this->extConfig['cssIgnoreList'] as $ignoreMatch) {
+					if ($ignoreMatch === '') {
+						continue;
+					}
+					
+					$test = preg_match('/' . $ignoreMatch . '/i', basename($matches[4][$i]));
+					if ($test) {
 						break;
+					}
+				}
 				if ($test) {
 					$this->setCSSfiles(array($media => $matches[4][$i]));
 					continue;
@@ -390,7 +410,7 @@ class tx_scriptmerger
 				if ($this->extConfig['cssReplaceImport']) {
 					$cssFiles[$media] = !is_array($cssFiles[$media]) ? array() : $cssFiles[$media];
 					$cssFiles[$media] = array_merge($cssFiles[$media],
-							$this->replaceImportRule($script, true));
+						$this->replaceImportRule($script, true));
 				} else
 					$cssFiles[$media][] = $script;
 			}
@@ -406,9 +426,8 @@ class tx_scriptmerger
 	 *
 	 * @return array js files
 	 */
-	function getJSfiles()
-	{
-		// get head
+	function getJSfiles() {
+	// get head
 		$pattern = '/\<head\>.*\<\/head\>/iUs';
 		$head = array();
 		preg_match($pattern, $GLOBALS['TSFE']->content, $head);
@@ -438,7 +457,7 @@ class tx_scriptmerger
 
 		// parses body
 		if ($this->extConfig['jsParseBodyScripts']) {
-			// get body
+		// get body
 			$pattern = '/\<body\>.*\<\/body\>/is';
 			$body = array();
 			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
@@ -475,9 +494,8 @@ class tx_scriptmerger
 		$jsFiles = array();
 		$dupes = array();
 		$inDoc = '';
-		for ($i = 0; $i < $length; ++$i)
-		{
-			// inDoc styles must be parsed to get only the js content
+		for ($i = 0; $i < $length; ++$i) {
+		// inDoc styles must be parsed to get only the js content
 			if (empty($matches[2][$i])) {
 				$pattern =
 					'/\<script.*?\>' .									// begin of node
@@ -503,9 +521,16 @@ class tx_scriptmerger
 			// test matching with the ignore list
 			$filename = basename($matches[2][$i]);
 			$test = 0;
-			foreach($this->extConfig['jsIgnoreList'] as $ignoreMatch)
-				if ($test = preg_match('/' . $ignoreMatch . '/i', $filename))
+			foreach($this->extConfig['jsIgnoreList'] as $ignoreMatch) {
+				if ($ignoreMatch === '') {
+					continue;
+				}
+
+				$test = preg_match('/' . $ignoreMatch . '/i', $filename);
+				if ($test) {
 					break;
+				}
+			}
 
 			// only unique scripts; no match with the ignore list
 			if ($test)
@@ -533,9 +558,8 @@ class tx_scriptmerger
 	 * @param $inDoc bool cssFile comes from generated inDoc styles
 	 * @return array new files with import rule content if any
 	 */
-	function replaceImportRule($cssFile, $inDoc = false)
-	{
-		// get file content
+	function replaceImportRule($cssFile, $inDoc = false) {
+	// get file content
 		$prefix = !t3lib_div::isFirstPartOfStr($cssFile, 'http://') ? PATH_site : '';
 		$fileContent = file_get_contents($prefix . $cssFile);
 
@@ -545,7 +569,7 @@ class tx_scriptmerger
 			'/@import[\s]*' .		// must begin with @import
 			'(?:url\()?[\'|"]?' .		// with or without url notation and/or quotes
 			(empty($excludeList) ? '' :
-				'(?!(' . $excludeList . '))') .	// exclude list for imports
+			'(?!(' . $excludeList . '))') .	// exclude list for imports
 			'([a-z0-9_\-\.\/\\\]+?)' .			// filename (\1)
 			'[\'|"]?(?:\))?;' .			// with or without url notation and/or quotes
 			'/is';
@@ -594,8 +618,7 @@ class tx_scriptmerger
 	 * @param string $cssFile css file
 	 * @return string fixed css code
 	 */
-	function replaceCSSurl($content, $cssFile)
-	{
+	function replaceCSSurl($content, $cssFile) {
 		$http = t3lib_div::isFirstPartOfStr($cssFile, 'http://') ||
 			t3lib_div::isFirstPartOfStr($cssFile, 'https://') ? 1 : 0;
 		$cssFile = str_replace(t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR'), '', $cssFile);
@@ -607,11 +630,12 @@ class tx_scriptmerger
 			'["\']?\)' .					// ending of the url property
 			'/ie';
 
+		$replacement = '';
 		if ($this->extConfig['img2Base64']) {
 			$replacement = '"url(data:image/" . substr("\1", strrpos("\1", ".")+1) . ";' . // mime type
 				'base64," . base64_encode(file_get_contents("' .
-					PATH_site . '" . (substr("\1", 0, strpos("\1", "/")) != "fileadmin" ? "' .
-					dirname($cssFile) . '" : "") . "/\1")) . ") "'; // base64 encoded data
+				PATH_site . '" . (substr("\1", 0, strpos("\1", "/")) != "fileadmin" ? "' .
+				dirname($cssFile) . '" : "") . "/\1")) . ") "'; // base64 encoded data
 		} else {
 			$dirname = ($this->extConfig['cssOutputType'] != 'inDoc' ?
 				$relative2CachePath : '') . dirname($cssFile);
