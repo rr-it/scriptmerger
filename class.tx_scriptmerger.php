@@ -168,6 +168,12 @@ class tx_scriptmerger {
 				').*/isU';
 		}
 
+		if ($this->extConfig['css.']['compress.']['ignore'] !== '') {
+			$this->extConfig['css.']['compress.']['ignore'] = '/.*(' .
+				str_replace(',', '|', $this->extConfig['css.']['compress.']['ignore']) .
+				').*/isU';
+		}
+
 		if ($this->extConfig['css.']['merge.']['ignore'] !== '') {
 			$this->extConfig['css.']['merge.']['ignore'] = '/.*(' .
 				str_replace(',', '|', $this->extConfig['css.']['merge.']['ignore']) .
@@ -177,6 +183,12 @@ class tx_scriptmerger {
 		if ($this->extConfig['javascript.']['minify.']['ignore'] !== '') {
 			$this->extConfig['javascript.']['minify.']['ignore'] = '/.*(' .
 				str_replace(',', '|', $this->extConfig['javascript.']['minify.']['ignore']) .
+				').*/isU';
+		}
+
+		if ($this->extConfig['javascript.']['compress.']['ignore'] !== '') {
+			$this->extConfig['javascript.']['compress.']['ignore'] = '/.*(' .
+				str_replace(',', '|', $this->extConfig['javascript.']['compress.']['ignore']) .
 				').*/isU';
 		}
 
@@ -238,7 +250,7 @@ class tx_scriptmerger {
 
 						// file should be compressed instead?
 						if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
-							function_exists('gzcompress')
+							function_exists('gzcompress') && !$cssProperties['compress-ignore']
 						) {
 							$newFile = $this->compressCSSfile($cssProperties);
 						}
@@ -335,7 +347,7 @@ class tx_scriptmerger {
 
 				// file should be compressed instead?
 				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
-					function_exists('gzcompress')
+					function_exists('gzcompress') && !$javascriptProperties['compress-ignore']
 				) {
 					$newFile = $this->compressJavascriptFile($javascriptProperties);
 				}
@@ -494,6 +506,7 @@ class tx_scriptmerger {
 				// try to resolve any @import occurences
 				$content = Minify_ImportProcessor::process($source);
 				$this->css[$relation][$media][$i]['minify-ignore'] = false;
+				$this->css[$relation][$media][$i]['compress-ignore'] = false;
 				$this->css[$relation][$media][$i]['merge-ignore'] = false;
 				$this->css[$relation][$media][$i]['file'] = $source;
 				$this->css[$relation][$media][$i]['content'] = $content;
@@ -510,6 +523,7 @@ class tx_scriptmerger {
 				// ignore this file if the content could not be fetched
 				if ($content == '') {
 					$this->css[$relation][$media][$i]['minify-ignore'] = true;
+					$this->css[$relation][$media][$i]['compress-ignore'] = true;
 					$this->css[$relation][$media][$i]['merge-ignore'] = true;
 					$this->css[$relation][$media][$i]['source'] = $source;
 					$this->css[$relation][$media][$i]['content'] = '';
@@ -518,11 +532,18 @@ class tx_scriptmerger {
 
 				// check if the file should be ignored for some processes
 				$this->css[$relation][$media][$i]['minify-ignore'] = false;
+				$this->css[$relation][$media][$i]['compress-ignore'] = false;
 				$this->css[$relation][$media][$i]['merge-ignore'] = false;
 
 				if ($this->extConfig['css.']['minify.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['css.']['minify.']['ignore'], $source)) {
 						$this->css[$relation][$media][$i]['minify-ignore'] = true;
+					}
+				}
+
+				if ($this->extConfig['css.']['compress.']['ignore'] !== '') {
+					if (preg_match($this->extConfig['css.']['compress.']['ignore'], $source)) {
+						$this->css[$relation][$media][$i]['compress-ignore'] = true;
 					}
 				}
 
@@ -553,14 +574,14 @@ class tx_scriptmerger {
 	 * @return array js files
 	 */
 	protected function getJavascriptFiles() {
-		// fetch the head content and replace it by a simple marker
+		// fetch the head content
 		$head = array();
 		$pattern = '/<head>.*<\/head>/is';
 		preg_match($pattern, $GLOBALS['TSFE']->content, $head);
 		$head = $head[0];
 
-		// parse all available css code inside link and style tags
-		$javascriptTags = array();
+		// parse all available css code inside script tags
+		$headJavascriptTags = array();
 		$pattern = '/' .
 			'<script' .			// This expression includes any script nodes
 				'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
@@ -568,12 +589,12 @@ class tx_scriptmerger {
 			'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
 			'<\/script>\s*' .	// until the possible closing tag.
 			'/is';
-		preg_match_all($pattern, $head, $javascriptTags);
-		//t3lib_div::debug($javascriptTags);
+		preg_match_all($pattern, $head, $headJavascriptTags);
+		//t3lib_div::debug($headJavascriptTags);
 
 		// remove any css code inside the output content
-		if (count($javascriptTags[0])) {
-			$head = preg_replace($pattern, '', $head, count($javascriptTags[0]));
+		if (count($headJavascriptTags[0])) {
+			$head = preg_replace($pattern, '', $head, count($headJavascriptTags[0]));
 		}
 
 		// replace head with new one
@@ -584,7 +605,49 @@ class tx_scriptmerger {
 			$GLOBALS['TSFE']->content
 		);
 
-		// stop parsing now!
+		// fetch the body content
+		$javascriptTags = array();
+		if ($this->extConfig['javascript.']['parseBody'] === '1') {
+			$body = array();
+			$pattern = '/<body>.*<\/body>/is';
+			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
+			$body = $body[0];
+
+			// parse all available css code inside script tags
+			$bodyJavascriptTags = array();
+			$pattern = '/' .
+				'<script' .			// This expression includes any script nodes
+					'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
+					'(?=.+?(?:src="(.*?)"|>))' .				// It fetches the src attribute.
+				'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
+				'<\/script>\s*' .	// until the possible closing tag.
+				'/is';
+			preg_match_all($pattern, $body, $bodyJavascriptTags);
+			//t3lib_div::debug($bodyJavascriptTags);
+
+			// remove any css code inside the output content
+			if (count($bodyJavascriptTags[0])) {
+				$body = preg_replace($pattern, '', $body, count($bodyJavascriptTags[0]));
+			}
+
+			// replace body with new one
+			$pattern = '/<body>.*<\/body>/is';
+			$GLOBALS['TSFE']->content = preg_replace(
+				$pattern,
+				$body,
+				$GLOBALS['TSFE']->content
+			);
+
+			// merge results from body and head
+			$javascriptTags[0] = array_merge_recursive($headJavascriptTags[0], $bodyJavascriptTags[0]);
+			$javascriptTags[1] = array_merge_recursive($headJavascriptTags[1], $bodyJavascriptTags[1]);
+			$javascriptTags[2] = array_merge_recursive($headJavascriptTags[2], $bodyJavascriptTags[2]);
+			//t3lib_div::debug($javascriptTags);
+		} else {
+			$javascriptTags = $headJavascriptTags;
+		}
+
+		// if there are no results, stop parsing now!
 		if (!count($javascriptTags[0])) {
 			return;
 		}
@@ -622,6 +685,7 @@ class tx_scriptmerger {
 
 				// try to resolve any @import occurences
 				$this->javascript[$i]['minify-ignore'] = false;
+				$this->javascript[$i]['compress-ignore'] = false;
 				$this->javascript[$i]['merge-ignore'] = false;
 				$this->javascript[$i]['file'] = $source;
 				$this->javascript[$i]['content'] = $javascriptContent[1][0];
@@ -639,6 +703,7 @@ class tx_scriptmerger {
 				// ignore this file if the content could not be fetched
 				if ($content == '') {
 					$this->javascript[$i]['minify-ignore'] = true;
+					$this->javascript[$i]['compress-ignore'] = true;
 					$this->javascript[$i]['merge-ignore'] = true;
 					$this->javascript[$i]['file'] = $source;
 					$this->javascript[$i]['content'] = '';
@@ -647,11 +712,18 @@ class tx_scriptmerger {
 
 				// check if the file should be ignored for some processes
 				$this->javascript[$i]['minify-ignore'] = false;
+				$this->javascript[$i]['compress-ignore'] = false;
 				$this->javascript[$i]['merge-ignore'] = false;
 
 				if ($this->extConfig['javascript.']['minify.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)) {
 						$this->javascript[$i]['minify-ignore'] = true;
+					}
+				}
+
+				if ($this->extConfig['javascript.']['compress.']['ignore'] !== '') {
+					if (preg_match($this->extConfig['javascript.']['compress.']['ignore'], $source)) {
+						$this->javascript[$i]['compress-ignore'] = true;
 					}
 				}
 

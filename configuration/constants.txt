@@ -11,6 +11,7 @@ plugin.tx_scriptmerger {
 		# gzip compression
 		compress {
 			enable = 1
+			ignore =
 		}
 
 		# merging
@@ -22,6 +23,7 @@ plugin.tx_scriptmerger {
 
 	javascript {
 		enable = 1
+		parseBody = 0
 
 		# minification
 		minify {
@@ -32,6 +34,7 @@ plugin.tx_scriptmerger {
 		# gzip compression
 		compress {
 			enable = 1
+			ignore = \?
 		}
 
 		# merging
