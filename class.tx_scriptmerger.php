@@ -639,15 +639,18 @@ class tx_scriptmerger {
 			);
 
 			// merge results from body and head
-			$javascriptTags[0] = array_merge_recursive($headJavascriptTags[0], $bodyJavascriptTags[0]);
-			$javascriptTags[1] = array_merge_recursive($headJavascriptTags[1], $bodyJavascriptTags[1]);
-			$javascriptTags[2] = array_merge_recursive($headJavascriptTags[2], $bodyJavascriptTags[2]);
-			//t3lib_div::debug($javascriptTags);
+			for ($i = 0; $i < 3; ++$i) {
+				$javascriptTags[$i] = array_merge_recursive(
+					$headJavascriptTags[$i],
+					$bodyJavascriptTags[$i]
+				);
+			}
 		} else {
 			$javascriptTags = $headJavascriptTags;
 		}
 
 		// if there are no results, stop parsing now!
+		//t3lib_div::debug($javascriptTags);
 		if (!count($javascriptTags[0])) {
 			return;
 		}
@@ -886,6 +889,9 @@ class tx_scriptmerger {
 	protected function writeJavascriptToDocument() {
 		// prepare pattern
 		$pattern = '/<\/head>/is';
+		if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
+			$pattern = '/<\/body>/is';
+		}
 
 		// write all files back to the document
 		ksort($this->javascript);

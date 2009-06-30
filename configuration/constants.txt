@@ -24,6 +24,7 @@ plugin.tx_scriptmerger {
 	javascript {
 		enable = 1
 		parseBody = 0
+		addBeforeBody = 0
 
 		# minification
 		minify {
