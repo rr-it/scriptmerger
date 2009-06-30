@@ -38,6 +38,7 @@ $EM_CONF[$_EXTKEY] = array(
 			'typo3' => '4.2.0-4.3.99',
 		),
 		'conflicts' => array(
+			'speedy' => ''
 		),
 		'suggests' => array(
 		),

@@ -792,7 +792,7 @@ class tx_scriptmerger {
 					}
 
 					// build css link
-					$content = '<link rel="' . $relation . '" type="text/css" ' .
+					$content = "\t" . '<link rel="' . $relation . '" type="text/css" ' .
 						'media="' . $media . '" href="' . $file . '" />' . "\n";
 
 					// add content right before the closing head tag
@@ -827,7 +827,7 @@ class tx_scriptmerger {
 			}
 
 			// build javascript script link
-			$content = '<script type="text/javascript" src="' . $file . '"></script>' . "\n";
+			$content = "\t" . '<script type="text/javascript" src="' . $file . '"></script>' . "\n";
 
 			// add content right before the closing head tag
 			$GLOBALS['TSFE']->content = preg_replace(

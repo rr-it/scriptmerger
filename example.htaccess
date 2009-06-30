@@ -1,0 +1,16 @@
+# Cache Expires
+ExpiresActive on
+<FilesMatch "\.(ico|png|gif|js|css|jpg|jpeg|swf)">
+	ExpiresDefault "access plus 7 days"
+</FilesMatch>
+
+# Cache ETag
+FileETag none
+<FilesMatch "\.(ico|png|gif|js|css|jpg|jpeg|swf)">
+	Header unset Last-Modified
+</FilesMatch>
+
+# Compressed Content
+<FilesMatch "\.gz\.(js|css)">
+	Header set Content-Encoding gzip
+</FilesMatch>
