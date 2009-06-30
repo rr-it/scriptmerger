@@ -1,0 +1,43 @@
+plugin.tx_scriptmerger {
+	css {
+		enable = 1
+
+		# minification
+		minify {
+			enable = 1
+			ignore =
+		}
+
+		# gzip compression
+		compress {
+			enable = 1
+		}
+
+		# merging
+		merge {
+			enable = 1
+			ignore =
+		}
+	}
+
+	javascript {
+		enable = 1
+
+		# minification
+		minify {
+			enable = 1
+			ignore = \?
+		}
+
+		# gzip compression
+		compress {
+			enable = 1
+		}
+
+		# merging
+		merge {
+			enable = 1
+			ignore = \?
+		}
+	}
+}

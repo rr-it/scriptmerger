@@ -3,16 +3,17 @@ if (!defined ('TYPO3_MODE')) {
 	die ('Access denied.');
 }
 
-$extConfig_scriptmerger = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['scriptmerger']);
+// post processing hook to clear any existing cache files if the button in
+// the backend is clicked (contains an age check)
+$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['clearCachePostProc'][] =
+    'EXT:scriptmerger/class.tx_scriptmerger_cache.php:&tx_scriptmerger_cache->clearCachePostProc';
 
+// register the minify, compress and merge processes
 if (TYPO3_MODE == 'FE') {
+	$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-all'][] =
+		'EXT:scriptmerger/class.tx_scriptmerger.php:tx_scriptmerger->contentPostProcAll';
 	$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-cached'][] =
-		'EXT:scriptmerger/class.tx_scriptmerger.php:tx_scriptmerger->main';
-
-	if (!$extConfig_scriptmerger['disableOutputHook']) {
-		$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-output'][] =
-			'EXT:scriptmerger/class.tx_scriptmerger.php:tx_scriptmerger->main';
-	}
+		'EXT:scriptmerger/class.tx_scriptmerger.php:tx_scriptmerger->contentPostProcCached';
 }
 
 ?>

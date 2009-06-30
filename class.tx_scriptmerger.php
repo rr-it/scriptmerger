@@ -3,7 +3,7 @@
 /***************************************************************
 *  Copyright notice
 *
-*  (c) 2007 Stefan Galinski <stefan.galinski@gmail.com>
+*  (c) 2009 Stefan Galinski <stefan.galinski@gmail.com>
 *  All rights reserved
 *
 *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -24,628 +24,823 @@
 ***************************************************************/
 
 /**
- * Could be used to merge css and js files. Now only two requests are needed to
- * get the whole external code. Should reduce the initial loading time of
- * a page dramatically.
+ * This file contains the main processing class of the extension "scriptmerger". It
+ * handles the parsing and replacing of the css and javascript files. Also it contains
+ * methods for compressing, minifiing and merging of such files. The whole functionality
+ * uses extensivly the functionality of the project minify.
  *
  * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
 
+/** Minify: Import Processor */
+require_once(t3lib_extMgm::extPath('scriptmerger') .
+	'resources/minify/lib/Minify/ImportProcessor.php');
+
+/** Minify: CSS Minificator */
+require_once(t3lib_extMgm::extPath('scriptmerger') .
+	'resources/minify/lib/Minify/CSS.php');
+
+/** Minify: JSMin+ */
+require_once(t3lib_extMgm::extPath('scriptmerger') .
+	'resources/minify/lib/JSMinPlus.php');
+
 /**
- * Could be used to merge css and js files. Now only two requests are needed to
- * get the whole external code. Should reduce the initial loading time of
- * a page dramatically.
+ * This class contains the parsing and replacing functionality of css and javascript files.
+ * Furthermore several wrapper methods to the project minify are available to minify, merge
+ * and compress such files.
  *
  * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
 class tx_scriptmerger {
-//	static $called = false;
+	/* @var $tempDirectory array directories for minified, compressed and merged files */
+	private $tempDirectories = '';
 
 	/** @var $extConfig array holds the extension configuration */
-	var $extConfig = array();
+	private $extConfig = array();
 
-	/** @var $cssFiles array holds all css files */
-	var $cssFiles = array();
+	/* @var $conditionalComments array holds the conditional comments */
+	private $conditionalComments = array();
 
-	/** @var $cssFiles array holds all js files */
-	var $jsFiles = array();
+	/**
+	 * holds the javascript code
+	 *
+	 * Structure:
+	 * - $relation (rel attribute)
+	 *   - $media (media attribute)
+	 *     - $file
+	 *       |-content => string
+	 *       |-basename => string (basename of $file without file prefix)
+	 *       |-minify-ignore => bool
+	 *       |-merge-ignore => bool
+	 *
+	 * @var $css array
+	 */
+	private $css = array();
 
-	/** @var $cssFiles array holds all ignored js files */
-	var $ignoredJsFiles = array();
-
-	/** @var $cssTidy hold the cssTidy object */
-	var $cssTidy = null;
+	/**
+	 * holds the javascript code 
+	 *
+	 * Structure:
+	 * - $file
+	 *   |-content => string
+	 *   |-basename => string (basename of $file without file prefix)
+	 *   |-minify-ignore => bool
+	 *   |-merge-ignore => bool
+	 *
+	 * @var $javascript array
+	 */
+	private $javascript = array();
 
 	/**
 	 * Constructor
 	 *
-	 *  Initializes some variables and prepares the extension configuration!
-	 *
 	 * @return void
 	 */
 	public function __construct() {
-		// this class needs to be called only once
-//		if (self::$called) {
-//			return true;
-//		}
+		// define temporary directories
+		$this->tempDirectories = array (
+			'main' => PATH_site . 'typo3temp/scriptmerger/',
+			'temp' => PATH_site . 'typo3temp/scriptmerger/temp/',
+			'minified' => PATH_site . 'typo3temp/scriptmerger/minified/',
+			'compressed' => PATH_site . 'typo3temp/scriptmerger/compressed/',
+			'merged' => PATH_site . 'typo3temp/scriptmerger/merged/'
+		);
 
-		// amount of instances (needed for hook count)
-		if (!$instances)
-			static $instances = 0;
+		// create missing directories
+		foreach ($this->tempDirectories as $directory) {
+			if (!is_dir($directory)) {
+				mkdir($directory);
+			}
+		}
 
-		// only execute the output hook if dynamic include scripts are available
-		if (!$GLOBALS['TSFE']->isINTincScript() && $instances)
-			return false;
-		++$instances;
+		// prepare the extension configuration
+		$this->prepareExtensionConfiguration();
+	}
 
+	/**
+	 * Just a wrapper for the main function! It's used for the contentPostProc-all hook.
+	 *
+	 * @return void
+	 */
+	public function contentPostProcAll() {
+		// don't use this hook if no uncached informations are available
+		if ($GLOBALS['TSFE']->config['config']['no_cache'] != 1 &&
+			t3lib_div::_GP('no_cache') != 1
+		) {
+			return;
+		}
+
+		$this->main();
+	}
+
+	/**
+	 * Just a wrapper for the main function!  It's used for the contentPostProc-cache hook.
+	 *
+	 * @return void
+	 */
+	public function contentPostProcCached() {
+		$this->main();
+	}
+
+	/**
+	 * This method fetches and prepares the extension configuration.
+	 * 
+	 * @return void
+	 */
+	protected function prepareExtensionConfiguration() {
 		// global extension configuration
-		$this->extConfig =
-			unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['scriptmerger']);
-			
+		$this->extConfig = unserialize(
+			$GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['scriptmerger']
+		);
+
 		// typoscript extension configuration
-		// @todo config. -> plugin.
-		$tsSetup = $GLOBALS['TSFE']->tmpl->setup['config.']['tx_scriptmerger.'];
+		$tsSetup = $GLOBALS['TSFE']->tmpl->setup['plugin.']['tx_scriptmerger.'];
 		if (is_array($tsSetup)) {
 			foreach ($tsSetup as $key => $value) {
 				$this->extConfig[$key] = $value;
 			}
 		}
-
-		// if the whole css content should be base64 encoded then images needs to be encoded too
-		if ($this->extConfig['cssOutputType'] == 'base64') {
-			$this->extConfig['img2Base64'] = true;
+		
+		// prepare ignore expressions
+		if ($this->extConfig['css.']['minify.']['ignore'] !== '') {
+			$this->extConfig['css.']['minify.']['ignore'] = '/.*(' .
+				str_replace(',', '|', $this->extConfig['css.']['minify.']['ignore']) .
+				').*/isU';
 		}
 
-		// javascript ignore list
-		$this->extConfig['jsIgnoreList'] = explode(',', $this->extConfig['jsIgnoreList']);
-		$this->extConfig['jsIgnoreList'][] = '.+\?.+'; // any <link> tag with parameters
-		$this->extConfig['jsIgnoreList'][] = 'scriptaculous.*.js'; // @todo remove me
-		for ($i = 0; $i < count($this->extConfig['jsIgnoreList']); ++$i) {
-			$this->extConfig['jsIgnoreList'][$i] =
-				addcslashes($this->extConfig['jsIgnoreList'][$i], '/\'');
+		if ($this->extConfig['css.']['merge.']['ignore'] !== '') {
+			$this->extConfig['css.']['merge.']['ignore'] = '/.*(' .
+				str_replace(',', '|', $this->extConfig['css.']['merge.']['ignore']) .
+				').*/isU';
 		}
 
-		// css ignore list
-		$this->extConfig['cssIgnoreList'] = explode(',', $this->extConfig['cssIgnoreList']);
-		for ($i = 0; $i < count($this->extConfig['cssIgnoreList']); ++$i) {
-			$this->extConfig['cssIgnoreList'][$i] =
-				addcslashes($this->extConfig['cssIgnoreList'][$i], '/\'');
+		if ($this->extConfig['javascript.']['minify.']['ignore'] !== '') {
+			$this->extConfig['javascript.']['minify.']['ignore'] = '/.*(' .
+				str_replace(',', '|', $this->extConfig['javascript.']['minify.']['ignore']) .
+				').*/isU';
 		}
 
-		// create cache directory
-		if (!is_dir(PATH_site . $this->extConfig['cachePath'])) {
-			t3lib_div::mkdir(PATH_site . $this->extConfig['cachePath']);
-		}
-
-		// include jsmin if should be used and it's not already loaded by TYPO3
-		if ($this->extConfig['jsmin'] && !class_exists('JSMin')) {
-			require_once('resources/jsmin/jsmin-1.1.1.php');
-		}
-
-		// include csstidy if it should be used
-		if ($this->extConfig['csstidy']) {
-			require_once('resources/csstidy/class.csstidy.php');
+		if ($this->extConfig['javascript.']['merge.']['ignore'] !== '') {
+			$this->extConfig['javascript.']['merge.']['ignore'] = '/.*(' .
+				str_replace(',', '|', $this->extConfig['javascript.']['merge.']['ignore']) .
+				').*/isU';
 		}
 	}
 
 	/**
 	 * Contains the process logic of the whole plugin!
 	 *
-	 * @return bool true or false
+	 * @return void
 	 */
-	function main() {
-		// this method should be called only once!
-//		if (self::$called) {
-//			return true;
-//		}
-//		self::$called = true;
+	protected function main() {
+		if ($this->extConfig['css.']['enable'] === '1') {
+			// save the conditional comments
+			$this->getConditionalComments();
 
-		// disables scriptmerger functionality for some special pages or debug purposes
-		if ($this->extConfig['disable'])
-			return false;
+			// fetch all remaining css contents
+			$this->getCSSfiles();
 
-		// combine css files
-		if ($this->extConfig['cssCombine']) {
-			$this->cssFiles = $this->getCSSfiles();
-			if (count($this->cssFiles))
-				$this->setCSSfiles($this->prepCSSfiles());
-		}
+			// minify, compress and merging
+			foreach ($this->css as $relation => $cssByRelation) {
+				foreach ($cssByRelation as $media => $cssByMedia) {
+					$mergedContent = '';
+					$files = '';
+					$firstFreeIndex = -1;
+					foreach ($cssByMedia as $index => $cssProperties) {
+						$newFile = '';
 
-		// combine js files
-		if ($this->extConfig['jsCombine']) {
-			$this->jsFiles = $this->getJSfiles();
-			if (count($this->jsFiles))
-				$this->setJSfiles($this->prepJSfiles());
+						// file should be minified
+						if ($this->extConfig['css.']['minify.']['enable'] === '1' &&
+							!$cssProperties['minify-ignore']
+						) {
+							$newFile = $this->minifyCSSfile($cssProperties);
+						}
 
-			if (count($this->ignoredJsFiles))
-				foreach ($this->ignoredJsFiles as $file)
-					$this->setJSfiles($file);
-		}
+						// file should be merged
+						if ($this->extConfig['css.']['merge.']['enable'] === '1' &&
+							!$cssProperties['merge-ignore']
+						) {
+							if ($firstFreeIndex < 0) {
+								$firstFreeIndex = $index;
+							}
 
-		return true;
-	}
+							// add content and filename
+							$mergedContent .= $cssProperties['content'] . "\n";
+							$files .= $cssProperties['basename'];
 
-	/**
-	 * Writes the css content into the final document
-	 *
-	 * @param $cssFiles array css files (Structure: $cssFiles[screen|print] = file)
-	 * @return boolean true or false
-	 */
-	function setCSSfiles($cssFiles) {
-		$add = '';
-		foreach ($cssFiles as $media => $file) {
-			if ($this->extConfig['cssOutputType'] != 'inDoc') {
-				if ($this->extConfig['cssOutputType'] == 'base64')
-					$file = 'data:text/css;base64,' .
-						base64_encode(file_get_contents(PATH_site . $file));
-				$add .= '<link rel="stylesheet" type="text/css" media="' .
-					$media . '" href="' . $GLOBALS['TSFE']->absRefPrefix . $file . '" />' . "\n";
-			} else
-				$add .= '<style type="text/css" media="' . $media . '">' . "\n" . '/*<![CDATA[*/' . "\n" .
-					file_get_contents(PATH_site . $file) . "\n" . '/*]]>*/' . "\n" . '</style>' . "\n";
-		}
+							// remove file from array
+							unset($this->css[$relation][$media][$index]);
 
-		// conditional comments must be below the script!
-		$pattern = '/\<(?:\!--\[if.+?\]|\/head)\>/is';
-		$replace = $add . '\0';
-		$GLOBALS['TSFE']->content =
-			preg_replace($pattern, $replace, $GLOBALS['TSFE']->content, 1);
+							// we doesn't need to compress or add a new file to the array,
+							// because the last one will finally not be needed anymore
+							continue;
+						}
 
-		return true;
-	}
+						// file should be compressed instead?
+						if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
+							function_exists('gzcompress')
+						) {
+							$newFile = $this->compressCSSfile($cssProperties);
+						}
 
-	/**
-	 * Writes the js content into the final document
-	 *
-	 * @param $jsFile string js file
-	 * @return boolean true or false
-	 */
-	function setJSfiles($jsFile) {
-		if ($this->extConfig['jsOutputType'] == 'base64')
-			$jsFile = 'data:text/javascript;base64,' .
-				base64_encode(file_get_contents(PATH_site . $jsFile));
+						// minification or compression was used
+						if ($newFile !== '') {
+							// remove old entry
+							unset($this->css[$relation][$media][$index]);
 
-		$pattern = '/\<!--HD_.+--\>|\<\/head\>/isU';
-		$replace = '<script type="text/javascript" src="' . $GLOBALS['TSFE']->absRefPrefix . $jsFile . '"></script>' . "\n" . '\0';
-		$GLOBALS['TSFE']->content =
-			preg_replace($pattern, $replace, $GLOBALS['TSFE']->content, 1);
+							// add new entry
+							$this->css[$relation][$media][$index]['file'] = $newFile;
+							$this->css[$relation][$media][$index]['content'] =
+								$cssProperties['content'];
+							$this->css[$relation][$media][$index]['basename'] =
+								$cssProperties['basename'];
+						}
+					}
 
-		return true;
-	}
+					// save merged content inside a new file
+					if ($this->extConfig['css.']['merge.']['enable'] === '1') {
+						// create filename
+						$newBasename = md5($files) . '.merged';
 
-	/**
-	 * Prepares the js files for the final document
-	 *
-	 * @return string final js file
-	 */
-	function prepJSfiles() {
-	// write files back to the document
-		$fileContent = '';
-		foreach($this->jsFiles as $jsFile) {
-			$prefix = !t3lib_div::isFirstPartOfStr($jsFile, 'http://') &&
-				!t3lib_div::isFirstPartOfStr($jsFile, 'https://') ? PATH_site : '';
-			$fileContent .= file_get_contents($prefix . $jsFile) . "\n";
-		}
-		$finalJSfile = $this->extConfig['cachePath'] . 'javascript_' . md5($fileContent) . '.js';
+						// create property array
+						$properties = array (
+							'content' => $mergedContent,
+							'basename' => $newBasename
+						);
 
-		// do we need to cache the file?
-		if (is_file(PATH_site . $finalJSfile))
-			return $finalJSfile;
+						// file should be compressed
+						$newFile = '';
+						if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
+							function_exists('gzcompress')
+						) {
+							$newFile = $this->compressCSSfile($properties);
+						} else {
+							$newFile = $this->tempDirectories['merged'] .
+								$properties['basename'] . '.css';
+							t3lib_div::writeFile($newFile, $properties['content']);
+						}
 
-		// js minification by jsmin
-		if ($this->extConfig['jsmin'])
-			$fileContent = JSMin::minify($fileContent);
-
-		// write file
-		t3lib_div::writeFile(PATH_site . $finalJSfile, $fileContent);
-
-		return $finalJSfile;
-	}
-
-	/**
-	 * Prepares the css files for the final document
-	 *
-	 * Includes: Reformatting/Simplification by CSSTidy, Merging and Correction
-	 *
-	 * @return array final css files (Structure: $cssFiles[screen|print][1-n] = file)
-	 */
-	function prepCSSfiles() {
-		// init csstidy
-		if ($this->extConfig['csstidy']) {
-			$this->cssTidy = new csstidy();
-			$this->cssTidy->load_template($this->extConfig['csstidy.']['compression']);
-			$this->cssTidy->set_cfg('preserve_css', $this->extConfig['csstidy.']['preserveCSS']);
-			$this->cssTidy->set_cfg('remove_last_;', true);
-			$this->cssTidy->set_cfg('timestamp', true);
-		}
-
-		// write files back to the document
-		$finalCSSfiles = array();
-		foreach($this->cssFiles as $media => $files) {
-			// get final filename
-			$fileContent = '';
-			foreach($files as $cssFile) {
-				$prefix = !t3lib_div::isFirstPartOfStr($cssFile, 'http://') &&
-					!t3lib_div::isFirstPartOfStr($cssFile, 'https://') ? PATH_site : '';
-				$fileContent .= file_get_contents($prefix . $cssFile) . "\n";
+						// add new entry
+						$this->css[$relation][$media][$firstFreeIndex]['file'] = $newFile;
+						$this->css[$relation][$media][$firstFreeIndex]['content'] =
+							$properties['content'];
+						$this->css[$relation][$media][$firstFreeIndex]['basename'] =
+							$properties['basename'];
+					}
+				}
 			}
-			$finalCSSfiles[$media] = $this->extConfig['cachePath'] .
-				'stylesheet_' . $media . '_' . md5($fileContent) . '.css';
-
-			// do we need to cache the file?
-			if (is_file(PATH_site . $finalCSSfiles[$media]))
-				continue;
-
-			// get file contents
-			$fileContent = '';
-			foreach($files as $cssFile) {
-				$prefix = !t3lib_div::isFirstPartOfStr($cssFile, 'http://') &&
-					!t3lib_div::isFirstPartOfStr($cssFile, 'https://') ? PATH_site : '';
-				$fileContent .= $this->replaceCSSurl(file_get_contents($prefix .
-					$cssFile), $cssFile) . "\n";
-			}
-
-			// css optimizations by css tidy
-			if ($this->extConfig['csstidy']) {
-				$this->cssTidy->parse($fileContent);
-				$fileContent = $this->cssTidy->print->plain();
-				$this->cssTidy->css = array();
-				$this->cssTidy->tokens = array();
-				$this->cssTidy->import = array();
-			}
-
-			// write file
-			t3lib_div::writeFile(PATH_site . $finalCSSfiles[$media], $fileContent);
+			
+			// write the conditional comments and possibly merged css files back to the document
+			$this->writeCSStoDocument();
+			$this->writeConditionalCommentsToDocument();
 		}
 
-		return $finalCSSfiles;
+		if ($this->extConfig['javascript.']['enable'] === '1') {
+			// fetch all javascript content
+			$this->getJavascriptFiles();
+
+			// minify, compress and merging
+			$mergedContent = '';
+			$files = '';
+			$firstFreeIndex = -1;
+			foreach ($this->javascript as $index => $javascriptProperties) {
+				$newFile = '';
+
+				// file should be minified
+				if ($this->extConfig['javascript.']['minify.']['enable'] === '1' &&
+					!$javascriptProperties['minify-ignore']
+				) {
+					$newFile = $this->minifyJavascriptFile($javascriptProperties);
+				}
+
+				// file should be merged
+				if ($this->extConfig['javascript.']['merge.']['enable'] === '1' &&
+					!$javascriptProperties['merge-ignore']
+				) {
+					if ($firstFreeIndex < 0) {
+						$firstFreeIndex = $index;
+					}
+
+					// add content and filename
+					$mergedContent .= $javascriptProperties['content'] . "\n";
+					$files .= $javascriptProperties['basename'];
+
+					// remove file from array
+					unset($this->javascript[$index]);
+
+					// we doesn't need to compress or add a new file to the array,
+					// because the last one will finally not be needed anymore
+					continue;
+				}
+
+				// file should be compressed instead?
+				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
+					function_exists('gzcompress')
+				) {
+					$newFile = $this->compressJavascriptFile($javascriptProperties);
+				}
+
+				// minification or compression was used
+				if ($newFile !== '') {
+					// remove old entry
+					unset($this->javascript[$index]);
+
+					// add new entry
+					$this->javascript[$index]['file'] = $newFile;
+					$this->javascript[$index]['content'] = $javascriptProperties['content'];
+					$this->javascript[$index]['basename'] = $javascriptProperties['basename'];
+				}
+			}
+
+			// save merged content inside a new file
+			if ($this->extConfig['javascript.']['merge.']['enable'] === '1') {
+				// create filename
+				$newBasename = md5($files) . '.merged';
+
+				// create property array
+				$properties = array (
+					'content' => $mergedContent,
+					'basename' => $newBasename
+				);
+
+				// file should be compressed
+				$newFile = '';
+				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
+					function_exists('gzcompress')
+				) {
+					$newFile = $this->compressJavascriptFile($properties);
+				} else {
+					$newFile = $this->tempDirectories['merged'] .
+						$properties['basename'] . '.js';
+					t3lib_div::writeFile($newFile, $properties['content']);
+				}
+
+				// add new entry
+				$this->javascript[$firstFreeIndex]['file'] = $newFile;
+				$this->javascript[$firstFreeIndex]['content'] = $properties['content'];
+				$this->javascript[$firstFreeIndex]['basename'] = $properties['basename'];
+			}
+
+			// write javascript content back to the document
+			$this->writeJavascriptToDocument();
+		}
 	}
 
 	/**
-	 * Returns an array of css files which are referenced in the head
+	 * This method parses the output content and saves any found conditional comments
+	 * into the "conditionalComments" class property. The output content is cleaned
+	 * up of the found results.
 	 *
-	 * The final html content is cleaned up by any occurences of css code!
-	 *
-	 * @return array css files (Structure: $cssFiles[screen|print][1-n] = file)
+	 * @return void
 	 */
-	function getCSSfiles() {
-		$cssFiles = array();
-		$ccomments = array();
-		$matches = array();
+	protected function getConditionalComments() {
+		// parse the conditional comments
+		$pattern = '/<!--\[if.+?<!\[endif\]-->\s*/is';
+		preg_match_all($pattern, $GLOBALS['TSFE']->content, $this->conditionalComments);
+		//t3lib_div::debug($this->conditionalComments);
+		if (!$this->conditionalComments[0]) {
+			return;
+		}
 
-		// save the conditional comments
-		$pattern = '/\<!--\[if.+!\[endif\]--\>/isU';
-		preg_match_all($pattern, $GLOBALS['TSFE']->content, $ccomments);
-		//t3lib_div::debug($ccomments);
-		$GLOBALS['TSFE']->content =
-			preg_replace($pattern, '', $GLOBALS['TSFE']->content, count($ccomments[0]));
-
-		// parser (matches and replaces with the same query)
-		$pattern =
-			'/\<(link|style)' .	// any link or style nodes (node name saved in \1)
-			'(?=.+?' .				// anything inside the node; next conditions could have a dynamic order
-			'(?=.*?(?:type=["|\'](text\/css)["|\']|\>))' .	// condition (type="text/css" || >) Result: \2
-			'(?=.*?(?:media=["|\'](.*?)["|\']|\>))' .			// condition (media || >) Result: \3
-			'(?=.*?(?:href=["|\'](.*?)["|\']|\>))' .				// condition (href || >) Result: \4
-			').+?\2.*?' .												// \2 holds type condition result (text/css or nothing)
-			'(?:\/\>|\<\/style\>)[\c\s' . "\n\r\t" . ']*' .		// until node end is reached
-			'/is';
-		preg_match_all($pattern, $GLOBALS['TSFE']->content, $matches);
-		//t3lib_div::debug($matches);
-		if (!count($matches))
-			return $cssFiles;
-		$GLOBALS['TSFE']->content =
-			preg_replace($pattern, '', $GLOBALS['TSFE']->content, count($matches[0]));
-
-		// write conditional comments back to the document
-		$pattern = '/\<\/head\>/isU';
-		$replace = implode("\n", $ccomments[0]) . "\n" . '\0';
+		// remove the conditional comments from the output content
+		$GLOBALS['TSFE']->content = preg_replace(
+			$pattern,
+			'',
+			$GLOBALS['TSFE']->content,
+			count($this->conditionalComments[0])
+		);
+	}
+	
+	/**
+	 * This method writes the conditional comments back into the final output content.
+	 * 
+	 * @return void
+	 */
+	protected function writeConditionalCommentsToDocument() {
+		// write conditional comments into the output content
+		$pattern = '/<\/head>/is';
+		$replace = implode("\n", $this->conditionalComments[0]) . "\n" . '\0';
 		$GLOBALS['TSFE']->content =
 			preg_replace($pattern, $replace, $GLOBALS['TSFE']->content);
-
-		// parse matches
-		$length = count($matches[0]);
-		$inDoc = array();
-		for ($i = 0; $i < $length; ++$i) {
-			$media = !empty($matches[3][$i]) ? $matches[3][$i] : 'screen';
-
-			// inDoc styles must be parsed to get only the css content
-			if ($matches[1][$i] == 'style') {
-				$pattern =
-					'/\<style.*?\>' .						// begin of style tag
-					'(?:.*?\/\*\<!\[CDATA\[\*\/)?' .	// prefixed optional CDATA
-					'\s*(.*?)' .								// css code (saved in \1)
-					'(?:\s*\/\*\]\]\>\*\/)?' .				// postfixed end of optional CDATA
-					'\s*\<\/style\>' .					// end of style tag
-					'/is';										// no ungreedy modifier (causes problems)
-
-				preg_match_all($pattern, $matches[0][$i], $content);
-//				t3lib_div::debug($content);
-				$inDoc[$media] .= $content[1][0] . "\n";
-
-			} elseif ($matches[1][$i] == 'link') {
-
-				// only http and existing files
-				if (!t3lib_div::isFirstPartOfStr($matches[4][$i], 'http://') &&
-					!t3lib_div::isFirstPartOfStr($matches[4][$i], 'https://') &&
-					!is_file(PATH_site . $matches[4][$i]))
-					continue;
-
-				// check the ignore list
-				$test = false;
-				foreach($this->extConfig['cssIgnoreList'] as $ignoreMatch) {
-					if ($ignoreMatch === '') {
-						continue;
-					}
-					
-					$test = preg_match('/' . $ignoreMatch . '/i', basename($matches[4][$i]));
-					if ($test) {
-						break;
-					}
-				}
-				if ($test) {
-					$this->setCSSfiles(array($media => $matches[4][$i]));
-					continue;
-				}
-
-				// add files (linked file + possible import files)
-				if ($this->extConfig['cssReplaceImport']) {
-					$cssFiles[$media] = !is_array($cssFiles[$media]) ? array() : $cssFiles[$media];
-					$cssFiles[$media] = array_merge($cssFiles[$media],
-						$this->replaceImportRule($matches[4][$i]));
-				} else
-					$cssFiles[$media][] = $matches[4][$i];
-			}
-		}
-
-		// write inDoc css into single media files
-		if (count($inDoc)) {
-			foreach($inDoc as $media => $content) {
-				$script = $this->extConfig['cachePath'] . 'stylesheet_inDocCSS_' .
-					$media . '_' . md5($content) . '.css';
-				if (!is_file(PATH_site . $script))
-					t3lib_div::writeFile(PATH_site . $script, $content);
-
-				// add files (inDoc file +possible import files)
-				if ($this->extConfig['cssReplaceImport']) {
-					$cssFiles[$media] = !is_array($cssFiles[$media]) ? array() : $cssFiles[$media];
-					$cssFiles[$media] = array_merge($cssFiles[$media],
-						$this->replaceImportRule($script, true));
-				} else
-					$cssFiles[$media][] = $script;
-			}
-		}
-
-		return $cssFiles;
 	}
 
 	/**
-	 * Returns an array of js files which are referenced in the head
+	 * This method parses the output content and saves any found css files or inline code
+	 * into the "css" class property. The output content is cleaned up of the found results.
 	 *
-	 * The final html content is cleaned up by any occurences of js code!
+	 * @return void
+	 */
+	protected function getCSSfiles() {
+		// parse all available css code inside link and style tags
+		$cssTags = array();
+		$pattern = '/' .
+			'<(link|style)' .	// This expression includes any link or style nodes
+				'(?=.+?(?:type="(text\/css)"|>))' .	// which have the type text/css.
+				'(?=.+?(?:media="(.*?)"|>))' .		// It fetches the media attribute
+				'(?=.+?(?:href="(.*?)"|>))' .		// and the href attribute
+				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute of the node.
+			'.+?\2.+?' .				// Finally we finish the parsing of the opening tag
+			'(?:\/>|<\/style>)\s*' .	// until the possible closing tag.
+			'/is';
+		preg_match_all($pattern, $GLOBALS['TSFE']->content, $cssTags);
+		//t3lib_div::debug($cssTags);
+		if (!count($cssTags[0])) {
+			return;
+		}
+
+		// remove any css code inside the output content
+		$GLOBALS['TSFE']->content = preg_replace(
+			$pattern,
+			'',
+			$GLOBALS['TSFE']->content, count($cssTags[0])
+		);
+
+		// parse matches
+		$amountOfResults = count($cssTags[0]);
+		for ($i = 0; $i < $amountOfResults; ++$i) {
+			// get media attribute (screen as default if it's empty)
+			$media = ($cssTags[3][$i] === '') ? 'screen' : $cssTags[3][$i];
+			$media = implode(',', array_map('trim', explode(',', $media)));
+
+			// get rel attribute (stylesheet as default if it's empty)
+			$relation = ($cssTags[5][$i] === '') ? 'stylesheet' : $cssTags[5][$i];
+
+			// get source attribute
+			$source = $cssTags[4][$i];
+
+			// styles which are added inside the document must be parsed again
+			// to fetch the pure css code
+			if ($cssTags[1][$i] === 'style') {
+				$cssContent = array();
+				$pattern = '/' .
+					'<style.*?>' .					// This expression removes the opening style tag
+					'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
+					'\s*(.*?)' .					// We save the pure css content,
+					'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
+					'\s*<\/style>' .				// and closing style tag
+					'/is';
+				preg_match_all($pattern, $cssTags[0][$i], $cssContent);
+				//t3lib_div::debug($cssContent);
+
+				// we doesn't need to continue if it was an empty style tag
+				if ($cssContent[1][0] === '') {
+					continue;
+				}
+
+				// save the content into a temporary file
+				$source = tempnam($this->tempDirectories['temp'], 'scriptmerger-temp-') . '.css';
+				t3lib_div::writeFile($source, $cssContent[1][0]);
+
+				// try to resolve any @import occurences
+				$content = Minify_ImportProcessor::process($source);
+				$this->css[$relation][$media][$i]['minify-ignore'] = false;
+				$this->css[$relation][$media][$i]['merge-ignore'] = false;
+				$this->css[$relation][$media][$i]['file'] = $source;
+				$this->css[$relation][$media][$i]['content'] = $content;
+			} else {
+				// try to fetch the content of the css file
+				$content = '';
+				$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $source);
+				if (file_exists($file)) {
+					$content = Minify_ImportProcessor::process($file);
+				} else {
+					$content = Minify_ImportProcessor::process($source);
+				}
+
+				// ignore this file if the content could not be fetched
+				if ($content == '') {
+					$this->css[$relation][$media][$i]['minify-ignore'] = true;
+					$this->css[$relation][$media][$i]['merge-ignore'] = true;
+					$this->css[$relation][$media][$i]['source'] = $source;
+					$this->css[$relation][$media][$i]['content'] = '';
+					continue;
+				}
+
+				// check if the file should be ignored for some processes
+				$this->css[$relation][$media][$i]['minify-ignore'] = false;
+				$this->css[$relation][$media][$i]['merge-ignore'] = false;
+
+				if ($this->extConfig['css.']['minify.']['ignore'] !== '') {
+					if (preg_match($this->extConfig['css.']['minify.']['ignore'], $source)) {
+						$this->css[$relation][$media][$i]['minify-ignore'] = true;
+					}
+				}
+
+				if ($this->extConfig['css.']['merge.']['ignore'] !== '') {
+					if (preg_match($this->extConfig['css.']['merge.']['ignore'], $source)) {
+						$this->css[$relation][$media][$i]['merge-ignore'] = true;
+					}
+				}
+
+				// set the css file with it's content
+				$this->css[$relation][$media][$i]['source'] = $source;
+				$this->css[$relation][$media][$i]['content'] = $content;
+			}
+
+			// get basename for later usage
+			// basename without file prefix and prefixed hash of the dirname
+			$filename = basename($source);
+			$hash = md5(dirname($source));
+			$this->css[$relation][$media][$i]['basename'] =
+				substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
+		}
+	}
+
+	/**
+	 * This method parses the output content and saves any found javascript files or inline code
+	 * into the "javascript" class property. The output content is cleaned up of the found results.
 	 *
 	 * @return array js files
 	 */
-	function getJSfiles() {
-	// get head
-		$pattern = '/\<head\>.*\<\/head\>/iUs';
+	protected function getJavascriptFiles() {
+		// fetch the head content and replace it by a simple marker
 		$head = array();
+		$pattern = '/<head>.*<\/head>/is';
 		preg_match($pattern, $GLOBALS['TSFE']->content, $head);
 		$head = $head[0];
-		$GLOBALS['TSFE']->content = preg_replace($pattern,
-			'###HTML_HEAD_SCRIPTMERGER###', $GLOBALS['TSFE']->content);
 
-		// head parser (matches and replaces with the same query)
-		$pattern =
-			'/\<script' .									// any script nodes
-			'(?=.+?' .										// anything inside the node; next conditions could have a dynamic order
-			'(?=.*?(?:type=["|\'](text\/javascript)["|\']|\>))' .	// condition (type="text/javascript" || >) Result: \1
-			'(?=.*?(?:src=["|\'](.*?)["|\']|\>))' .	// condition (href || >) Result: \2
-			').+?\1.*?' .									// \1 holds type condition result (text/javascript or nothing)
-			'\<\/script\>[\c\s' . "\n\r\t" . ']*' .	// until node end is reached + possible line ends
+		// parse all available css code inside link and style tags
+		$javascriptTags = array();
+		$pattern = '/' .
+			'<script' .			// This expression includes any script nodes
+				'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
+				'(?=.+?(?:src="(.*?)"|>))' .				// It fetches the src attribute.
+			'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
+			'<\/script>\s*' .	// until the possible closing tag.
 			'/is';
+		preg_match_all($pattern, $head, $javascriptTags);
+		//t3lib_div::debug($javascriptTags);
 
-		$matches = array();
-		preg_match_all($pattern, $head, $matches);
-		//t3lib_div::debug($matches);
-		if (count($matches))
-			$head = preg_replace($pattern, '', $head, count($matches[0]));
+		// remove any css code inside the output content
+		if (count($javascriptTags[0])) {
+			$head = preg_replace($pattern, '', $head, count($javascriptTags[0]));
+		}
 
 		// replace head with new one
-		$GLOBALS['TSFE']->content = preg_replace('/###HTML_HEAD_SCRIPTMERGER###/is',
-			$head, $GLOBALS['TSFE']->content);
+		$pattern = '/<head>.*<\/head>/is';
+		$GLOBALS['TSFE']->content = preg_replace(
+			$pattern,
+			$head,
+			$GLOBALS['TSFE']->content
+		);
 
-		// parses body
-		if ($this->extConfig['jsParseBodyScripts']) {
-		// get body
-			$pattern = '/\<body\>.*\<\/body\>/is';
-			$body = array();
-			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
-			$body = $body[0];
-			$GLOBALS['TSFE']->content = preg_replace($pattern,
-				'###HTML_BODY_SCRIPTMERGER###', $GLOBALS['TSFE']->content);
-
-			// body parser (matches and replaces with the same query)
-			$pattern =
-				'/\<script' .	// any script nodes
-				'(?=.+?' .		// anything inside the node; next conditions could have a dynamic order
-				'(?=.*?(?:type=["|\'](text\/javascript)["|\']|\>))' .	// condition (type="text/javascript" || >) Result: \1
-				'(?=.*?(?:src=["|\'](.+?)["|\'])|\>)' .		// condition (href || >) Result: \2
-				').+?(?:\2[^>]*?\1|\1[^>]*?\2).*?' .	// \1 holds type condition result (text/javascript or nothing)
-				'\<\/script\>[\c\s' . "\n\r\t" . ']*' .		// until node end is reached + possible line ends
-				'/is';
-
-			$matchesBody = array();
-			preg_match_all($pattern, $body, $matchesBody);
-			//t3lib_div::debug($matchesBody);
-			if (count($matchesBody))
-				$body = preg_replace($pattern, '', $body, count($matchesBody[0]));
-			$matches[0] = array_merge_recursive($matches[0], $matchesBody[0]);
-			$matches[1] = array_merge_recursive($matches[1], $matchesBody[1]);
-			$matches[2] = array_merge_recursive($matches[2], $matchesBody[2]);
-
-			// replace body with new one
-			$GLOBALS['TSFE']->content = preg_replace('/###HTML_BODY_SCRIPTMERGER###/is',
-				$body, $GLOBALS['TSFE']->content);
+		// stop parsing now!
+		if (!count($javascriptTags[0])) {
+			return;
 		}
 
 		// parse matches
-		$length = count($matches[0]);
-		$jsFiles = array();
-		$dupes = array();
-		$inDoc = '';
-		for ($i = 0; $i < $length; ++$i) {
-		// inDoc styles must be parsed to get only the js content
-			if (empty($matches[2][$i])) {
-				$pattern =
-					'/\<script.*?\>' .									// begin of node
-					'(?:.*?(?:\/\*|\/\/)?\<!\[CDATA\[(?:\*\/)?)?' .	// prefixed optional CDATA
-					'(?:.*?\<!--)?' .										// senseless <!-- construct
-					'\s*(.*?)' .												// js code (saved in \1)
-					'(?:\s*\/\/\s*-->)?' .									// senseless <!-- construct
-					'(?:\s*(?:\/\*|\/\/)?\]\]\>(?:\*\/)?)?' .			// postfixed end of optional CDATA
-					'\s*\<\/script\>' .									// end of node
-					'/is';														// no ungreedy modifier (causes problems)
+		$amountOfResults = count($javascriptTags[0]);
+		for ($i = 0; $i < $amountOfResults; ++$i) {
+			// get source attribute
+			$source = $javascriptTags[2][$i];
 
-				preg_match_all($pattern, $matches[0][$i], $content);
-				//t3lib_div::debug($content);
-				$inDoc .= $content[1][0] . "\n";
-			}
+			// styles which are added inside the document must be parsed again
+			// to fetch the pure css code
+			if ($source === '') {
+				$javascriptContent = array();
+				$pattern = '/' .
+					'<script.*?>' .					// This expression removes the opening script tag
+					'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
+					'(?:.*?<!--)?' .				// senseless <!-- construct
+					'\s*(.*?)' .					// We save the pure css content,
+					'(?:\s*\/\/\s*-->)?' .			// senseless <!-- construct
+					'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
+					'\s*<\/script>' .				// and closing script tag
+					'/is';
+				preg_match_all($pattern, $javascriptTags[0][$i], $javascriptContent);
+				//t3lib_div::debug($javascriptContent);
 
-			//save linked files into the js array
-			if (!t3lib_div::isFirstPartOfStr($matches[2][$i], 'http://') &&
-				!t3lib_div::isFirstPartOfStr($matches[4][$i], 'https://') &&
-				!is_file(PATH_site . $matches[2][$i]))
-				continue;
-
-			// test matching with the ignore list
-			$filename = basename($matches[2][$i]);
-			$test = 0;
-			foreach($this->extConfig['jsIgnoreList'] as $ignoreMatch) {
-				if ($ignoreMatch === '') {
+				// we doesn't need to continue if it was an empty style tag
+				if ($javascriptContent[1][0] === '') {
 					continue;
 				}
 
-				$test = preg_match('/' . $ignoreMatch . '/i', $filename);
-				if ($test) {
-					break;
+				// save the content into a temporary file
+				$source = tempnam($this->tempDirectories['temp'], 'scriptmerger-temp-') . '.js';
+				t3lib_div::writeFile($source, $cssContent[1][0]);
+
+				// try to resolve any @import occurences
+				$this->javascript[$i]['minify-ignore'] = false;
+				$this->javascript[$i]['merge-ignore'] = false;
+				$this->javascript[$i]['file'] = $source;
+				$this->javascript[$i]['content'] = $javascriptContent[1][0];
+
+			} else {
+				// try to fetch the content of the css file
+				$content = '';
+				$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $source);
+				if (file_exists($file)) {
+					$content = file_get_contents($file);
+				} else {
+					$content = t3lib_div::getURL($source);
+				}
+
+				// ignore this file if the content could not be fetched
+				if ($content == '') {
+					$this->javascript[$i]['minify-ignore'] = true;
+					$this->javascript[$i]['merge-ignore'] = true;
+					$this->javascript[$i]['file'] = $source;
+					$this->javascript[$i]['content'] = '';
+					continue;
+				}
+
+				// check if the file should be ignored for some processes
+				$this->javascript[$i]['minify-ignore'] = false;
+				$this->javascript[$i]['merge-ignore'] = false;
+
+				if ($this->extConfig['javascript.']['minify.']['ignore'] !== '') {
+					if (preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)) {
+						$this->javascript[$i]['minify-ignore'] = true;
+					}
+				}
+
+				if ($this->extConfig['javascript.']['merge.']['ignore'] !== '') {
+					if (preg_match($this->extConfig['javascript.']['merge.']['ignore'], $source)) {
+						$this->javascript[$i]['merge-ignore'] = true;
+					}
+				}
+
+				// set the javascript file with it's content
+				$this->javascript[$i]['file'] = $source;
+				$this->javascript[$i]['content'] = $content;
+			}
+
+			// get basename for later usage
+			// basename without file prefix and prefixed hash of the dirname
+			$filename = basename($source);
+			$hash = md5(dirname($source));
+			$this->javascript[$i]['basename'] =
+				substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
+		}
+	}
+
+	/**
+	 * This method minifies a css file. It's based upon the Minify_CSS class
+	 * of the project minify.
+	 *
+	 * @param array $properties properties of an entry (copy-by-reference is used!)
+	 * @return string new filename
+	 */
+	protected function minifyCSSfile(&$properties) {
+		// get new filename
+		$newFile = $this->tempDirectories['minified'] .
+			$properties['basename'] . '.min.css';
+
+		// minify content
+		$properties['content'] = Minify_CSS::minify($properties['content']);
+
+		// save content inside the new file
+		t3lib_div::writeFile($newFile, $properties['content']);
+
+		// save new part of the basename
+		$properties['basename'] .= '.min';
+
+		return $newFile;
+	}
+	
+	/**
+	 * This method minifies a javascript file. It's based upon the JSMin+ class
+	 * of the project minify.
+	 *
+	 * @param array $properties properties of an entry (copy-by-reference is used!)
+	 * @return string new filename
+	 */
+	protected function minifyJavascriptFile(&$properties) {
+		// get new filename
+		$newFile = $this->tempDirectories['minified'] .
+			$properties['basename'] . '.min.js';
+
+		// minify content
+		$properties['content'] = JSMinPlus::minify($properties['content']);
+
+		// save content inside the new file
+		t3lib_div::writeFile($newFile, $properties['content']);
+
+		// save new part of the basename
+		$properties['basename'] .= '.min';
+
+		return $newFile;
+	}
+
+	/**
+	 * This method compresses a css file.
+	 *
+	 * @param array $properties properties of an entry (copy-by-reference is used!)
+	 * @return string new filename
+	 */
+	protected function compressCSSfile(&$properties) {
+		// get new filename
+		$newFile = $this->tempDirectories['compressed'] .
+			$properties['basename'] . '.gz.css';
+
+		// compress content
+		$properties['content'] = gzencode($properties['content'], 9);
+
+		// save content inside the new file
+		t3lib_div::writeFile($newFile, $properties['content']);
+
+		// save new part of the basename
+		$properties['basename'] .= '.gz';
+
+		return $newFile;
+	}
+	
+	/**
+	 * This method compresses a javascript file.
+	 *
+	 * @param array $properties properties of an entry (copy-by-reference is used!)
+	 * @return string new filename
+	 */
+	protected function compressJavascriptFile(&$properties) {
+		// get new filename
+		$newFile = $this->tempDirectories['compressed'] .
+			$properties['basename'] . '.gz.js';
+
+		// compress content
+		$properties['content'] = gzencode($properties['content'], 9);
+
+		// save content inside the new file
+		t3lib_div::writeFile($newFile, $properties['content']);
+
+		// save new part of the basename
+		$properties['basename'] .= '.gz';
+
+		return $newFile;
+	}
+	
+	/**
+	 * This method writes the css back to the document.
+	 *
+	 * @return void
+	 */
+	protected function writeCSStoDocument() {
+		// prepare pattern
+		$pattern = '/<\/head>/is';
+
+		// write all files back to the document
+		ksort($this->css);
+		foreach ($this->css as $relation => $cssByRelation) {
+			foreach ($cssByRelation as $media => $cssByMedia) {
+				foreach ($cssByMedia as $index => $cssProperties) {
+					$file = $cssProperties['file'];
+
+					// normal file or http link?
+					if (file_exists($file)) {
+						$file = $GLOBALS['TSFE']->absRefPrefix .
+							str_replace(PATH_site, '', $file);
+					}
+
+					// build css link
+					$content = '<link rel="' . $relation . '" type="text/css" ' .
+						'media="' . $media . '" href="' . $file . '" />' . "\n";
+
+					// add content right before the closing head tag
+					$GLOBALS['TSFE']->content = preg_replace(
+						$pattern,
+						$content . '\0',
+						$GLOBALS['TSFE']->content
+					);
 				}
 			}
-
-			// only unique scripts; no match with the ignore list
-			if ($test)
-				$this->ignoredJsFiles[] = $matches[2][$i];
-			elseif (!in_array($filename, $dupes))
-				$jsFiles[] = $matches[2][$i];
-			$dupes[] = $filename;
 		}
-
-		// write inDoc js into a file
-		if (!empty($inDoc)) {
-			$script = $this->extConfig['cachePath'] . 'javascript_inDoc_' . md5($inDoc) . '.js';
-			if (!is_file(PATH_site . $script))
-				t3lib_div::writeFile(PATH_site . $script, $inDoc);
-			$jsFiles[] = $script;
-		}
-
-		return $jsFiles;
 	}
 
 	/**
-	 * Replaces import rules
+	 * This method writes the javascript back to the document.
 	 *
-	 * @param $cssFile string css file which should be parsed for import rules
-	 * @param $inDoc bool cssFile comes from generated inDoc styles
-	 * @return array new files with import rule content if any
+	 * @return void
 	 */
-	function replaceImportRule($cssFile, $inDoc = false) {
-	// get file content
-		$prefix = !t3lib_div::isFirstPartOfStr($cssFile, 'http://') ? PATH_site : '';
-		$fileContent = file_get_contents($prefix . $cssFile);
+	protected function writeJavascriptToDocument() {
+		// prepare pattern
+		$pattern = '/<\/head>/is';
 
-		// get import rules
-		$excludeList = implode('|', $this->extConfig['cssIgnoreList']);
-		$pattern =
-			'/@import[\s]*' .		// must begin with @import
-			'(?:url\()?[\'|"]?' .		// with or without url notation and/or quotes
-			(empty($excludeList) ? '' :
-			'(?!(' . $excludeList . '))') .	// exclude list for imports
-			'([a-z0-9_\-\.\/\\\]+?)' .			// filename (\1)
-			'[\'|"]?(?:\))?;' .			// with or without url notation and/or quotes
-			'/is';
-		$imports = array();
-		preg_match_all($pattern, $fileContent, $imports);
-		//t3lib_div::debug($imports);
-		if (!count($imports[0]))
-			return array($cssFile);
+		// write all files back to the document
+		ksort($this->javascript);
+		foreach ($this->javascript as $index => $javascriptProperties) {
+			$file = $javascriptProperties['file'];
 
-		$origFileContent = $this->replaceCSSurl(preg_replace($pattern, '', $fileContent,
-			count($imports[0])), $cssFile);
-		$origFileDir = !$inDoc ? dirname(str_replace(
-			t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR'), '', $cssFile)) : '';
-
-		// get file imports and write new file without imports
-		$cssFiles = array();
-		foreach ($imports[1] as $file) {
-			if (!t3lib_div::isFirstPartOfStr($file, 'http://') &&
-				!t3lib_div::isFirstPartOfStr($file, 'https://')) {
-				$file = PATH_site . $origFileDir . '/' . $file;
-				if (!is_file($file))
-					continue;
+			// normal file or http link?
+			if (file_exists($file)) {
+				$file = $GLOBALS['TSFE']->absRefPrefix .
+					str_replace(PATH_site, '', $file);
 			}
 
-			$fileContent = $this->replaceCSSurl(file_get_contents($file), $file);
-			$script = $this->extConfig['cachePath'] . 'stylesheet_import_' . md5($fileContent) . '.css';
-			if (!is_file(PATH_site . $script))
-				t3lib_div::writeFile(PATH_site . $script, $fileContent);
-			$cssFiles[] = $script;
+			// build javascript script link
+			$content = '<script type="text/javascript" src="' . $file . '"></script>' . "\n";
+
+			// add content right before the closing head tag
+			$GLOBALS['TSFE']->content = preg_replace(
+				$pattern,
+				$content . '\0',
+				$GLOBALS['TSFE']->content
+			);
 		}
-
-		// original file
-		$script = $this->extConfig['cachePath'] . 'stylesheet_importOrig_' .
-			md5($origFileContent) . '.css';
-		if (!is_file(PATH_site . $script))
-			t3lib_div::writeFile(PATH_site . $script, $origFileContent);
-		$cssFiles[] = $script;
-
-		return $cssFiles;
 	}
+}
 
-	/**
-	 * Replaces all occurences of url in the css code by new paths
-	 *
-	 * @param string $content css code
-	 * @param string $cssFile css file
-	 * @return string fixed css code
-	 */
-	function replaceCSSurl($content, $cssFile) {
-		$http = t3lib_div::isFirstPartOfStr($cssFile, 'http://') ||
-			t3lib_div::isFirstPartOfStr($cssFile, 'https://') ? 1 : 0;
-		$cssFile = str_replace(t3lib_div::getIndpEnv('TYPO3_REQUEST_DIR'), '', $cssFile);
-		$relative2CachePath = preg_replace('/.+\//U', '../', $this->extConfig['cachePath'], -1);
-
-		$pattern = '/url\(' .				// any property wich contains a url reference
-			'["\']?((?!\/)' .		// no absolute files (negative look-ahead)
-			'[a-z0-9_\-\.\/\\\]+)' .			// file reference (\1)
-			'["\']?\)' .					// ending of the url property
-			'/ie';
-
-		$replacement = '';
-		if ($this->extConfig['img2Base64']) {
-			$replacement = '"url(data:image/" . substr("\1", strrpos("\1", ".")+1) . ";' . // mime type
-				'base64," . base64_encode(file_get_contents("' .
-				PATH_site . '" . (substr("\1", 0, strpos("\1", "/")) != "fileadmin" ? "' .
-				dirname($cssFile) . '" : "") . "/\1")) . ") "'; // base64 encoded data
-		} else {
-			$dirname = ($this->extConfig['cssOutputType'] != 'inDoc' ?
-				$relative2CachePath : '') . dirname($cssFile);
-			$replacement = '"url(" . (substr("\1", 0, strpos("\1", "/")) == "fileadmin" ? "' .
-				$relative2CachePath . '" : "' . $dirname . '") . "/\1) "';
-		}
-
-		//preg_match_all($pattern, $content, $matches); t3lib_div::debug($matches);
-		return preg_replace($pattern, $replacement, $content, -1);
-	}
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php'])	{
+	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']);
 }
 
 ?>
