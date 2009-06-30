@@ -626,8 +626,20 @@ class tx_scriptmerger {
 			//t3lib_div::debug($bodyJavascriptTags);
 
 			// remove any css code inside the output content
+			// we leave markers in the form ###100### at the original places to write them
+			// back here; it's started by 100
 			if (count($bodyJavascriptTags[0])) {
-				$body = preg_replace($pattern, '', $body, count($bodyJavascriptTags[0]));
+				$function = create_function(
+					'',
+					'static $i = 100; return \'###\' . $i++ . \'###\';'
+				);
+
+				$body = preg_replace_callback(
+					$pattern,
+					$function,
+					$body,
+					count($bodyJavascriptTags[0])
+				);
 			}
 
 			// replace body with new one
@@ -639,17 +651,17 @@ class tx_scriptmerger {
 			);
 
 			// merge results from body and head
-			for ($i = 0; $i < 3; ++$i) {
-				$javascriptTags[$i] = array_merge_recursive(
-					$headJavascriptTags[$i],
-					$bodyJavascriptTags[$i]
-				);
+			// starting index at 100 for body scripts
+			$amountOfResults = count($bodyJavascriptTags[0]);
+			for ($i = 0; $i < $amountOfResults; ++$i) {
+				$headJavascriptTags[0][$i + 100] = $bodyJavascriptTags[0][$i];
+				$headJavascriptTags[1][$i + 100] = $bodyJavascriptTags[1][$i];
+				$headJavascriptTags[2][$i + 100] = $bodyJavascriptTags[2][$i];
 			}
-		} else {
-			$javascriptTags = $headJavascriptTags;
 		}
 
 		// if there are no results, stop parsing now!
+		$javascriptTags = $headJavascriptTags;
 		//t3lib_div::debug($javascriptTags);
 		if (!count($javascriptTags[0])) {
 			return;
@@ -657,16 +669,18 @@ class tx_scriptmerger {
 
 		// parse matches
 		$amountOfResults = count($javascriptTags[0]);
+		$indexes = array_keys($javascriptTags[0]);
 		for ($i = 0; $i < $amountOfResults; ++$i) {
 			// get source attribute
-			$source = $javascriptTags[2][$i];
+			$index = $indexes[$i];
+			$source = $javascriptTags[2][$index];
 
 			// styles which are added inside the document must be parsed again
 			// to fetch the pure css code
 			if ($source === '') {
 				$javascriptContent = array();
 				$pattern = '/' .
-					'<script.*?>' .					// This expression removes the opening script tag
+					'<script.*?>' .					// The expression removes the opening script tag
 					'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
 					'(?:.*?<!--)?' .				// senseless <!-- construct
 					'\s*(.*?)' .					// We save the pure css content,
@@ -674,7 +688,7 @@ class tx_scriptmerger {
 					'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
 					'\s*<\/script>' .				// and closing script tag
 					'/is';
-				preg_match_all($pattern, $javascriptTags[0][$i], $javascriptContent);
+				preg_match_all($pattern, $javascriptTags[0][$index], $javascriptContent);
 				//t3lib_div::debug($javascriptContent);
 
 				// we doesn't need to continue if it was an empty style tag
@@ -687,11 +701,11 @@ class tx_scriptmerger {
 				t3lib_div::writeFile($source, $cssContent[1][0]);
 
 				// try to resolve any @import occurences
-				$this->javascript[$i]['minify-ignore'] = false;
-				$this->javascript[$i]['compress-ignore'] = false;
-				$this->javascript[$i]['merge-ignore'] = false;
-				$this->javascript[$i]['file'] = $source;
-				$this->javascript[$i]['content'] = $javascriptContent[1][0];
+				$this->javascript[$index]['minify-ignore'] = false;
+				$this->javascript[$index]['compress-ignore'] = false;
+				$this->javascript[$index]['merge-ignore'] = false;
+				$this->javascript[$index]['file'] = $source;
+				$this->javascript[$index]['content'] = $javascriptContent[1][0];
 
 			} else {
 				// try to fetch the content of the css file
@@ -705,48 +719,51 @@ class tx_scriptmerger {
 
 				// ignore this file if the content could not be fetched
 				if ($content == '') {
-					$this->javascript[$i]['minify-ignore'] = true;
-					$this->javascript[$i]['compress-ignore'] = true;
-					$this->javascript[$i]['merge-ignore'] = true;
-					$this->javascript[$i]['file'] = $source;
-					$this->javascript[$i]['content'] = '';
+					$this->javascript[$index]['minify-ignore'] = true;
+					$this->javascript[$index]['compress-ignore'] = true;
+					$this->javascript[$index]['merge-ignore'] = true;
+					$this->javascript[$index]['file'] = $source;
+					$this->javascript[$index]['content'] = '';
 					continue;
 				}
 
 				// check if the file should be ignored for some processes
-				$this->javascript[$i]['minify-ignore'] = false;
-				$this->javascript[$i]['compress-ignore'] = false;
-				$this->javascript[$i]['merge-ignore'] = false;
+				$this->javascript[$index]['minify-ignore'] = false;
+				$this->javascript[$index]['compress-ignore'] = false;
+				$this->javascript[$index]['merge-ignore'] = false;
 
 				if ($this->extConfig['javascript.']['minify.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)) {
-						$this->javascript[$i]['minify-ignore'] = true;
+						$this->javascript[$index]['minify-ignore'] = true;
 					}
 				}
 
 				if ($this->extConfig['javascript.']['compress.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['javascript.']['compress.']['ignore'], $source)) {
-						$this->javascript[$i]['compress-ignore'] = true;
+						$this->javascript[$index]['compress-ignore'] = true;
 					}
 				}
 
 				if ($this->extConfig['javascript.']['merge.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['javascript.']['merge.']['ignore'], $source)) {
-						$this->javascript[$i]['merge-ignore'] = true;
+						$this->javascript[$index]['merge-ignore'] = true;
 					}
 				}
 
 				// set the javascript file with it's content
-				$this->javascript[$i]['file'] = $source;
-				$this->javascript[$i]['content'] = $content;
+				$this->javascript[$index]['file'] = $source;
+				$this->javascript[$index]['content'] = $content;
 			}
 
 			// get basename for later usage
 			// basename without file prefix and prefixed hash of the dirname
 			$filename = basename($source);
 			$hash = md5(dirname($source));
-			$this->javascript[$i]['basename'] =
-				substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
+			$this->javascript[$index]['basename'] = substr(
+				$filename,
+				0,
+				strrpos($filename, '.')
+			) . '-' . $hash;
 		}
 	}
 
@@ -907,12 +924,28 @@ class tx_scriptmerger {
 			// build javascript script link
 			$content = "\t" . '<script type="text/javascript" src="' . $file . '"></script>' . "\n";
 
+			// add body script backt to their original place if they were ignored
+			if ($index >= 100) {
+				$GLOBALS['TSFE']->content = str_replace(
+					'###' . $index . '###',
+					$content,
+					$GLOBALS['TSFE']->content
+				);
+				continue;
+			}
+
 			// add content right before the closing head tag
 			$GLOBALS['TSFE']->content = preg_replace(
 				$pattern,
 				$content . '\0',
 				$GLOBALS['TSFE']->content
 			);
+		}
+
+		// remove all empty body markers above 100
+		if ($this->extConfig['javascript.']['parseBody'] === '1') {
+			$pattern = '/###[0-9]{3}###/is';
+			$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
 		}
 	}
 }
