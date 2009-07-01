@@ -93,7 +93,7 @@ class tx_scriptmerger_cache {
 					$lastAccess = fileatime($tempDirectory . $file);
 					$age = $now - $lastAccess;
 
-					if ($age >= 2419200) {
+					if ($age >= 1209600) {
 						unlink($tempDirectory . $file);
 					}
 				}
