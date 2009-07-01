@@ -255,10 +255,6 @@ class tx_scriptmerger {
 
 						// minification or compression was used
 						if ($newFile !== '') {
-							// remove old entry
-							unset($this->css[$relation][$media][$index]);
-
-							// add new entry
 							$this->css[$relation][$media][$index]['file'] = $newFile;
 							$this->css[$relation][$media][$index]['content'] =
 								$cssProperties['content'];
@@ -272,7 +268,7 @@ class tx_scriptmerger {
 						// create property array
 						$properties = array (
 							'content' => $mergedContent,
-							'basename' => md5($mergedContent) . '.merged'
+							'basename' => 'head-' . md5($mergedContent) . '.merged'
 						);
 
 						// file should be compressed
@@ -310,83 +306,88 @@ class tx_scriptmerger {
 			$this->getJavascriptFiles();
 			
 			// minify, compress and merging
-			$mergedContent = '';
-			$firstFreeIndex = -1;
-			foreach ($this->javascript as $index => $javascriptProperties) {
-				$newFile = '';
+			foreach ($this->javascript as $section => $javascriptBySection) {
+				$mergedContent = '';
+				$firstFreeIndex = -1;
+				foreach ($javascriptBySection as $index => $javascriptProperties) {
+					$newFile = '';
 
-				// file should be minified
-				if ($this->extConfig['javascript.']['minify.']['enable'] === '1' &&
-					!$javascriptProperties['minify-ignore']
-				) {
-					$newFile = $this->minifyJavascriptFile($javascriptProperties);
-				}
-
-				// file should be merged
-				if ($this->extConfig['javascript.']['merge.']['enable'] === '1' &&
-					!$javascriptProperties['merge-ignore']
-				) {
-					if ($firstFreeIndex < 0) {
-						$firstFreeIndex = $index;
+					// file should be minified
+					if ($this->extConfig['javascript.']['minify.']['enable'] === '1' &&
+						!$javascriptProperties['minify-ignore']
+					) {
+						$newFile = $this->minifyJavascriptFile($javascriptProperties);
 					}
 
-					// add content
-					$mergedContent .= $javascriptProperties['content'] . "\n";
+					// file should be merged
+					if ($this->extConfig['javascript.']['merge.']['enable'] === '1' &&
+						!$javascriptProperties['merge-ignore']
+					) {
+						if ($firstFreeIndex < 0) {
+							$firstFreeIndex = $index;
+						}
 
-					// remove file from array
-					unset($this->javascript[$index]);
+						// add content
+						$mergedContent .= $javascriptProperties['content'] . "\n";
 
-					// we doesn't need to compress or add a new file to the array,
-					// because the last one will finally not be needed anymore
-					continue;
+						// remove file from array
+						unset($this->javascript[$section][$index]);
+
+						// we doesn't need to compress or add a new file to the array,
+						// because the last one will finally not be needed anymore
+						continue;
+					}
+
+					// file should be compressed instead?
+					if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
+						function_exists('gzcompress') && !$javascriptProperties['compress-ignore']
+					) {
+						$newFile = $this->compressJavascriptFile($javascriptProperties);
+					}
+
+					// minification or compression was used
+					if ($newFile !== '') {
+						$this->javascript[$section][$index]['file'] = $newFile;
+						$this->javascript[$section][$index]['content'] =
+							$javascriptProperties['content'];
+						$this->javascript[$section][$index]['basename'] =
+							$javascriptProperties['basename'];
+					}
 				}
 
-				// file should be compressed instead?
-				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
-					function_exists('gzcompress') && !$javascriptProperties['compress-ignore']
-				) {
-					$newFile = $this->compressJavascriptFile($javascriptProperties);
-				}
+				// save merged content inside a new file
+				if ($this->extConfig['javascript.']['merge.']['enable'] === '1') {
+					// create property array
+					$properties = array (
+						'content' => $mergedContent,
+						'basename' => $section . '-' . md5($mergedContent) . '.merged'
+					);
 
-				// minification or compression was used
-				if ($newFile !== '') {
-					// remove old entry
-					unset($this->javascript[$index]);
+					// file should be compressed
+					$newFile = '';
+					if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
+						function_exists('gzcompress')
+					) {
+						$newFile = $this->compressJavascriptFile($properties);
+					} else {
+						$newFile = $this->tempDirectories['merged'] .
+							$properties['basename'] . '.js';
+
+						if (!file_exists($newFile)) {
+							t3lib_div::writeFile($newFile, $properties['content']);
+						}
+					}
 
 					// add new entry
-					$this->javascript[$index]['file'] = $newFile;
-					$this->javascript[$index]['content'] = $javascriptProperties['content'];
-					$this->javascript[$index]['basename'] = $javascriptProperties['basename'];
+					$this->javascript[$section][$firstFreeIndex]['file'] = $newFile;
+					$this->javascript[$section][$firstFreeIndex]['content'] =
+						$properties['content'];
+					$this->javascript[$section][$firstFreeIndex]['basename'] =
+						$properties['basename'];
+						
+					// reset merged content variable
+					$mergedContent = '';
 				}
-			}
-
-			// save merged content inside a new file
-			if ($this->extConfig['javascript.']['merge.']['enable'] === '1') {
-				// create property array
-				$properties = array (
-					'content' => $mergedContent,
-					'basename' => md5($mergedContent) . '.merged'
-				);
-
-				// file should be compressed
-				$newFile = '';
-				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
-					function_exists('gzcompress')
-				) {
-					$newFile = $this->compressJavascriptFile($properties);
-				} else {
-					$newFile = $this->tempDirectories['merged'] .
-						$properties['basename'] . '.js';
-
-					if (!file_exists($newFile)) {
-						t3lib_div::writeFile($newFile, $properties['content']);
-					}
-				}
-
-				// add new entry
-				$this->javascript[$firstFreeIndex]['file'] = $newFile;
-				$this->javascript[$firstFreeIndex]['content'] = $properties['content'];
-				$this->javascript[$firstFreeIndex]['basename'] = $properties['basename'];
 			}
 
 			// write javascript content back to the document
@@ -576,6 +577,12 @@ class tx_scriptmerger {
 	 * @return array js files
 	 */
 	protected function getJavascriptFiles() {
+		// init
+		$javascriptTags = array(
+			'head' => array(),
+			'body' => array()
+		);
+
 		// fetch the head content
 		$head = array();
 		$pattern = '/<head>.*<\/head>/is';
@@ -583,7 +590,6 @@ class tx_scriptmerger {
 		$head = $head[0];
 
 		// parse all available css code inside script tags
-		$headJavascriptTags = array();
 		$pattern = '/' .
 			'<script' .			// This expression includes any script nodes
 				'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
@@ -591,12 +597,12 @@ class tx_scriptmerger {
 			'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
 			'<\/script>\s*' .	// until the possible closing tag.
 			'/is';
-		preg_match_all($pattern, $head, $headJavascriptTags);
+		preg_match_all($pattern, $head, $javascriptTags['head']);
 		//t3lib_div::debug($headJavascriptTags);
 
 		// remove any css code inside the output content
-		if (count($headJavascriptTags[0])) {
-			$head = preg_replace($pattern, '', $head, count($headJavascriptTags[0]));
+		if (count($javascriptTags['head'][0])) {
+			$head = preg_replace($pattern, '', $head, count($javascriptTags['head'][0]));
 		}
 
 		// replace head with new one
@@ -608,7 +614,6 @@ class tx_scriptmerger {
 		);
 
 		// fetch the body content
-		$javascriptTags = array();
 		if ($this->extConfig['javascript.']['parseBody'] === '1') {
 			$body = array();
 			$pattern = '/<body>.*<\/body>/is';
@@ -616,7 +621,6 @@ class tx_scriptmerger {
 			$body = $body[0];
 
 			// parse all available css code inside script tags
-			$bodyJavascriptTags = array();
 			$pattern = '/' .
 				'<script' .			// This expression includes any script nodes
 					'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
@@ -624,23 +628,23 @@ class tx_scriptmerger {
 				'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
 				'<\/script>\s*' .	// until the possible closing tag.
 				'/is';
-			preg_match_all($pattern, $body, $bodyJavascriptTags);
+			preg_match_all($pattern, $body, $javascriptTags['body']);
 			//t3lib_div::debug($bodyJavascriptTags);
 
 			// remove any css code inside the output content
 			// we leave markers in the form ###100### at the original places to write them
 			// back here; it's started by 100
-			if (count($bodyJavascriptTags[0])) {
+			if (count($javascriptTags['body'][0])) {
 				$function = create_function(
 					'',
-					'static $i = 100; return \'###\' . $i++ . \'###\';'
+					'static $i = 0; return \'###MERGER\' . $i++ . \'MERGER###\';'
 				);
 
 				$body = preg_replace_callback(
 					$pattern,
 					$function,
 					$body,
-					count($bodyJavascriptTags[0])
+					count($javascriptTags['body'][0])
 				);
 			}
 
@@ -651,126 +655,110 @@ class tx_scriptmerger {
 				$body,
 				$GLOBALS['TSFE']->content
 			);
-
-			// merge results from body and head
-			// starting index at 100 for body scripts
-			$amountOfResults = count($bodyJavascriptTags[0]);
-			for ($i = 0; $i < $amountOfResults; ++$i) {
-				$headJavascriptTags[0][$i + 100] = $bodyJavascriptTags[0][$i];
-				$headJavascriptTags[1][$i + 100] = $bodyJavascriptTags[1][$i];
-				$headJavascriptTags[2][$i + 100] = $bodyJavascriptTags[2][$i];
-			}
-		}
-
-		// if there are no results, stop parsing now!
-		$javascriptTags = $headJavascriptTags;
-		//t3lib_div::debug($javascriptTags);
-		if (!count($javascriptTags[0])) {
-			return;
 		}
 
 		// parse matches
-		$amountOfResults = count($javascriptTags[0]);
-		$indexes = array_keys($javascriptTags[0]);
-		for ($i = 0; $i < $amountOfResults; ++$i) {
-			// get source attribute
-			$index = $indexes[$i];
-			$source = $javascriptTags[2][$index];
+		foreach ($javascriptTags as $section => $results) {
+			$amountOfResults = count($results[0]);
+			for ($i = 0; $i < $amountOfResults; ++$i) {
+				// get source attribute
+				$source = $results[2][$i];
 
-			// styles which are added inside the document must be parsed again
-			// to fetch the pure css code
-			if ($source === '') {
-				$javascriptContent = array();
-				$pattern = '/' .
-					'<script.*?>' .					// The expression removes the opening script tag
-					'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
-					'(?:.*?<!--)?' .				// senseless <!-- construct
-					'\s*(.*?)' .					// We save the pure css content,
-					'(?:\s*\/\/\s*-->)?' .			// senseless <!-- construct
-					'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
-					'\s*<\/script>' .				// and closing script tag
-					'/is';
-				preg_match_all($pattern, $javascriptTags[0][$index], $javascriptContent);
-				//t3lib_div::debug($javascriptContent);
+				// styles which are added inside the document must be parsed again
+				// to fetch the pure css code
+				if ($source === '') {
+					$javascriptContent = array();
+					$pattern = '/' .
+						'<script.*?>' .					// The expression removes the opening script tag
+						'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
+						'(?:.*?<!--)?' .				// senseless <!-- construct
+						'\s*(.*?)' .					// We save the pure css content,
+						'(?:\s*\/\/\s*-->)?' .			// senseless <!-- construct
+						'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
+						'\s*<\/script>' .				// and closing script tag
+						'/is';
+					preg_match_all($pattern, $results[0][$i], $javascriptContent);
+					//t3lib_div::debug($javascriptContent);
 
-				// we doesn't need to continue if it was an empty style tag
-				if ($javascriptContent[1][0] === '') {
-					continue;
-				}
+					// we doesn't need to continue if it was an empty style tag
+					if ($javascriptContent[1][0] === '') {
+						continue;
+					}
 
-				// save the content into a temporary file
-				$hash = md5($javascriptContent[1][0]);
-				$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
+					// save the content into a temporary file
+					$hash = md5($javascriptContent[1][0]);
+					$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
 
-				if (!file_exists($source . '.js')) {
-					t3lib_div::writeFile($source . '.js', $javascriptContent[1][0]);
-				}
+					if (!file_exists($source . '.js')) {
+						t3lib_div::writeFile($source . '.js', $javascriptContent[1][0]);
+					}
 
-				// try to resolve any @import occurences
-				$this->javascript[$index]['minify-ignore'] = false;
-				$this->javascript[$index]['compress-ignore'] = false;
-				$this->javascript[$index]['merge-ignore'] = false;
-				$this->javascript[$index]['file'] = $source . '.js';
-				$this->javascript[$index]['content'] = $javascriptContent[1][0];
-				$this->javascript[$index]['basename'] = basename($source);
+					// try to resolve any @import occurences
+					$this->javascript[$section][$i]['minify-ignore'] = false;
+					$this->javascript[$section][$i]['compress-ignore'] = false;
+					$this->javascript[$section][$i]['merge-ignore'] = false;
+					$this->javascript[$section][$i]['file'] = $source . '.js';
+					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
+					$this->javascript[$section][$i]['basename'] = basename($source);
 
-			} else {
-				// try to fetch the content of the css file
-				$content = '';
-				$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $source);
-				if (file_exists($file)) {
-					$content = file_get_contents($file);
 				} else {
-					$content = t3lib_div::getURL($source);
-				}
-
-				// ignore this file if the content could not be fetched
-				if ($content == '') {
-					$this->javascript[$index]['minify-ignore'] = true;
-					$this->javascript[$index]['compress-ignore'] = true;
-					$this->javascript[$index]['merge-ignore'] = true;
-					$this->javascript[$index]['file'] = $source;
-					$this->javascript[$index]['content'] = '';
-					$this->javascript[$index]['basename'] = '';
-					continue;
-				}
-
-				// check if the file should be ignored for some processes
-				$this->javascript[$index]['minify-ignore'] = false;
-				$this->javascript[$index]['compress-ignore'] = false;
-				$this->javascript[$index]['merge-ignore'] = false;
-
-				if ($this->extConfig['javascript.']['minify.']['ignore'] !== '') {
-					if (preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)) {
-						$this->javascript[$index]['minify-ignore'] = true;
+					// try to fetch the content of the css file
+					$content = '';
+					$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $source);
+					if (file_exists($file)) {
+						$content = file_get_contents($file);
+					} else {
+						$content = t3lib_div::getURL($source);
 					}
-				}
 
-				if ($this->extConfig['javascript.']['compress.']['ignore'] !== '') {
-					if (preg_match($this->extConfig['javascript.']['compress.']['ignore'], $source)) {
-						$this->javascript[$index]['compress-ignore'] = true;
+					// ignore this file if the content could not be fetched
+					if ($content == '') {
+						$this->javascript[$section][$i]['minify-ignore'] = true;
+						$this->javascript[$section][$i]['compress-ignore'] = true;
+						$this->javascript[$section][$i]['merge-ignore'] = true;
+						$this->javascript[$section][$i]['file'] = $source;
+						$this->javascript[$section][$i]['content'] = '';
+						$this->javascript[$section][$i]['basename'] = '';
+						continue;
 					}
-				}
 
-				if ($this->extConfig['javascript.']['merge.']['ignore'] !== '') {
-					if (preg_match($this->extConfig['javascript.']['merge.']['ignore'], $source)) {
-						$this->javascript[$index]['merge-ignore'] = true;
+					// check if the file should be ignored for some processes
+					$this->javascript[$section][$i]['minify-ignore'] = false;
+					$this->javascript[$section][$i]['compress-ignore'] = false;
+					$this->javascript[$section][$i]['merge-ignore'] = false;
+
+					if ($this->extConfig['javascript.']['minify.']['ignore'] !== '' &&
+						preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)
+					) {
+							$this->javascript[$section][$i]['minify-ignore'] = true;
 					}
+
+					if ($this->extConfig['javascript.']['compress.']['ignore'] !== '' &&
+						preg_match($this->extConfig['javascript.']['compress.']['ignore'], $source)
+					) {
+							$this->javascript[$section][$i]['compress-ignore'] = true;
+					}
+
+					if ($this->extConfig['javascript.']['merge.']['ignore'] !== '' &&
+						preg_match($this->extConfig['javascript.']['merge.']['ignore'], $source)
+					) {
+							$this->javascript[$section][$i]['merge-ignore'] = true;
+					}
+
+					// set the javascript file with it's content
+					$this->javascript[$section][$i]['file'] = $source;
+					$this->javascript[$section][$i]['content'] = $content;
+
+					// get basename for later usage
+					// basename without file prefix and prefixed hash of the content
+					$filename = basename($source);
+					$hash = md5($content);
+					$this->javascript[$section][$i]['basename'] = substr(
+						$filename,
+						0,
+						strrpos($filename, '.')
+					) . '-' . $hash;
 				}
-
-				// set the javascript file with it's content
-				$this->javascript[$index]['file'] = $source;
-				$this->javascript[$index]['content'] = $content;
-
-				// get basename for later usage
-				// basename without file prefix and prefixed hash of the content
-				$filename = basename($source);
-				$hash = md5($content);
-				$this->javascript[$index]['basename'] = substr(
-					$filename,
-					0,
-					strrpos($filename, '.')
-				) . '-' . $hash;
 			}
 		}
 	}
@@ -907,9 +895,9 @@ class tx_scriptmerger {
 		$pattern = '/<\/head>/is';
 
 		// write all files back to the document
-		ksort($this->css);
 		foreach ($this->css as $relation => $cssByRelation) {
 			foreach ($cssByRelation as $media => $cssByMedia) {
+				ksort($cssByMedia);
 				foreach ($cssByMedia as $index => $cssProperties) {
 					$file = $cssProperties['file'];
 
@@ -940,47 +928,49 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function writeJavascriptToDocument() {
-		// prepare pattern
-		$pattern = '/<\/head>/is';
-		if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
-			$pattern = '/<\/body>/is';
-		}
-
 		// write all files back to the document
-		ksort($this->javascript);
-		foreach ($this->javascript as $index => $javascriptProperties) {
-			$file = $javascriptProperties['file'];
-
-			// normal file or http link?
-			if (file_exists($file)) {
-				$file = $GLOBALS['TSFE']->absRefPrefix .
-					str_replace(PATH_site, '', $file);
+		foreach ($this->javascript as $section => $javascriptBySection) {
+			// prepare pattern
+			$pattern = '/<\/' . $section . '>/is';
+			if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
+				$pattern = '/<\/body>/is';
 			}
 
-			// build javascript script link
-			$content = "\t" . '<script type="text/javascript" src="' . $file . '"></script>' . "\n";
+			ksort($javascriptProperties);
+			foreach ($javascriptBySection as $index => $javascriptProperties) {
+				$file = $javascriptProperties['file'];
 
-			// add body script backt to their original place if they were ignored
-			if ($index >= 100) {
-				$GLOBALS['TSFE']->content = str_replace(
-					'###' . $index . '###',
-					$content,
+				// normal file or http link?
+				if (file_exists($file)) {
+					$file = $GLOBALS['TSFE']->absRefPrefix . str_replace(PATH_site, '', $file);
+				}
+
+				// build javascript script link
+				$content = "\t" .
+					'<script type="text/javascript" src="' . $file . '"></script>' . "\n";
+
+				// add body script backt to their original place if they were ignored
+				if ($section == 'body' && $javascriptProperties['merge-ignore']) {
+					$GLOBALS['TSFE']->content = str_replace(
+						'###MERGER' . $index . 'MERGER###',
+						$content,
+						$GLOBALS['TSFE']->content
+					);
+					continue;
+				}
+
+				// add content right before the closing head tag
+				$GLOBALS['TSFE']->content = preg_replace(
+					$pattern,
+					$content . '\0',
 					$GLOBALS['TSFE']->content
 				);
-				continue;
 			}
-
-			// add content right before the closing head tag
-			$GLOBALS['TSFE']->content = preg_replace(
-				$pattern,
-				$content . '\0',
-				$GLOBALS['TSFE']->content
-			);
 		}
 
 		// remove all empty body markers above 100
 		if ($this->extConfig['javascript.']['parseBody'] === '1') {
-			$pattern = '/###[0-9]{3}###/is';
+			$pattern = '/###MERGER[0-9]*?MERGER###/is';
 			$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
 		}
 	}
