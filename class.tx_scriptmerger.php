@@ -216,7 +216,6 @@ class tx_scriptmerger {
 			foreach ($this->css as $relation => $cssByRelation) {
 				foreach ($cssByRelation as $media => $cssByMedia) {
 					$mergedContent = '';
-					$files = '';
 					$firstFreeIndex = -1;
 					foreach ($cssByMedia as $index => $cssProperties) {
 						$newFile = '';
@@ -236,9 +235,8 @@ class tx_scriptmerger {
 								$firstFreeIndex = $index;
 							}
 
-							// add content and filename
+							// add content
 							$mergedContent .= $cssProperties['content'] . "\n";
-							$files .= $cssProperties['basename'];
 
 							// remove file from array
 							unset($this->css[$relation][$media][$index]);
@@ -271,13 +269,10 @@ class tx_scriptmerger {
 
 					// save merged content inside a new file
 					if ($this->extConfig['css.']['merge.']['enable'] === '1') {
-						// create filename
-						$newBasename = md5($files) . '.merged';
-
 						// create property array
 						$properties = array (
 							'content' => $mergedContent,
-							'basename' => $newBasename
+							'basename' => md5($mergedContent) . '.merged'
 						);
 
 						// file should be compressed
@@ -289,7 +284,10 @@ class tx_scriptmerger {
 						} else {
 							$newFile = $this->tempDirectories['merged'] .
 								$properties['basename'] . '.css';
-							t3lib_div::writeFile($newFile, $properties['content']);
+
+							if (!file_exists($newFile)) {
+								t3lib_div::writeFile($newFile, $properties['content']);
+							}
 						}
 
 						// add new entry
@@ -310,10 +308,9 @@ class tx_scriptmerger {
 		if ($this->extConfig['javascript.']['enable'] === '1') {
 			// fetch all javascript content
 			$this->getJavascriptFiles();
-
+			
 			// minify, compress and merging
 			$mergedContent = '';
-			$files = '';
 			$firstFreeIndex = -1;
 			foreach ($this->javascript as $index => $javascriptProperties) {
 				$newFile = '';
@@ -333,9 +330,8 @@ class tx_scriptmerger {
 						$firstFreeIndex = $index;
 					}
 
-					// add content and filename
+					// add content
 					$mergedContent .= $javascriptProperties['content'] . "\n";
-					$files .= $javascriptProperties['basename'];
 
 					// remove file from array
 					unset($this->javascript[$index]);
@@ -366,13 +362,10 @@ class tx_scriptmerger {
 
 			// save merged content inside a new file
 			if ($this->extConfig['javascript.']['merge.']['enable'] === '1') {
-				// create filename
-				$newBasename = md5($files) . '.merged';
-
 				// create property array
 				$properties = array (
 					'content' => $mergedContent,
-					'basename' => $newBasename
+					'basename' => md5($mergedContent) . '.merged'
 				);
 
 				// file should be compressed
@@ -384,7 +377,10 @@ class tx_scriptmerger {
 				} else {
 					$newFile = $this->tempDirectories['merged'] .
 						$properties['basename'] . '.js';
-					t3lib_div::writeFile($newFile, $properties['content']);
+
+					if (!file_exists($newFile)) {
+						t3lib_div::writeFile($newFile, $properties['content']);
+					}
 				}
 
 				// add new entry
@@ -500,22 +496,21 @@ class tx_scriptmerger {
 				}
 
 				// save the content into a temporary file
-				$source = tempnam($this->tempDirectories['temp'], 'scriptmerger-temp-') . '.css';
-				t3lib_div::writeFile($source, $cssContent[1][0]);
+				$hash = md5($cssContent[1][0]);
+				$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
 
-				// build basename
-				$filename = basename($source);
-				$hash = md5($content);
-				$basename = substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
+				if (!file_exists($source . '.css')) {
+					t3lib_div::writeFile($source . '.css', $cssContent[1][0]);
+				}
 
 				// try to resolve any @import occurences
 				$content = Minify_ImportProcessor::process($source);
 				$this->css[$relation][$media][$i]['minify-ignore'] = false;
 				$this->css[$relation][$media][$i]['compress-ignore'] = false;
 				$this->css[$relation][$media][$i]['merge-ignore'] = false;
-				$this->css[$relation][$media][$i]['file'] = $source;
-				$this->css[$relation][$media][$i]['content'] = $content;
-				$this->css[$relation][$media][$i]['basename'] = $basename;
+				$this->css[$relation][$media][$i]['file'] = $source . '.css';
+				$this->css[$relation][$media][$i]['content'] = $cssContent[1][0];
+				$this->css[$relation][$media][$i]['basename'] = basename($source);
 			} else {
 				// try to fetch the content of the css file
 				$content = '';
@@ -704,21 +699,20 @@ class tx_scriptmerger {
 				}
 
 				// save the content into a temporary file
-				$source = tempnam($this->tempDirectories['temp'], 'scriptmerger-temp-') . '.js';
-				t3lib_div::writeFile($source, $cssContent[1][0]);
+				$hash = md5($javascriptContent[1][0]);
+				$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
 
-				// build basename
-				$filename = basename($source);
-				$hash = md5($content);
-				$basename = substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
+				if (!file_exists($source . '.js')) {
+					t3lib_div::writeFile($source . '.js', $javascriptContent[1][0]);
+				}
 
 				// try to resolve any @import occurences
 				$this->javascript[$index]['minify-ignore'] = false;
 				$this->javascript[$index]['compress-ignore'] = false;
 				$this->javascript[$index]['merge-ignore'] = false;
-				$this->javascript[$index]['file'] = $source;
+				$this->javascript[$index]['file'] = $source . '.js';
 				$this->javascript[$index]['content'] = $javascriptContent[1][0];
-				$this->javascript[$index]['basename'] = $basename;
+				$this->javascript[$index]['basename'] = basename($source);
 
 			} else {
 				// try to fetch the content of the css file
@@ -767,17 +761,17 @@ class tx_scriptmerger {
 				// set the javascript file with it's content
 				$this->javascript[$index]['file'] = $source;
 				$this->javascript[$index]['content'] = $content;
-			}
 
-			// get basename for later usage
-			// basename without file prefix and prefixed hash of the content
-			$filename = basename($source);
-			$hash = md5($content);
-			$this->javascript[$index]['basename'] = substr(
-				$filename,
-				0,
-				strrpos($filename, '.')
-			) . '-' . $hash;
+				// get basename for later usage
+				// basename without file prefix and prefixed hash of the content
+				$filename = basename($source);
+				$hash = md5($content);
+				$this->javascript[$index]['basename'] = substr(
+					$filename,
+					0,
+					strrpos($filename, '.')
+				) . '-' . $hash;
+			}
 		}
 	}
 
@@ -795,6 +789,8 @@ class tx_scriptmerger {
 
 		// stop further processing if the file already exists
 		if (file_exists($newFile)) {
+			$properties['basename'] .= '.min';
+			$properties['content'] = file_get_contents($newFile);
 			return $newFile;
 		}
 
@@ -824,6 +820,8 @@ class tx_scriptmerger {
 
 		// stop further processing if the file already exists
 		if (file_exists($newFile)) {
+			$properties['basename'] .= '.min';
+			$properties['content'] = file_get_contents($newFile);
 			return $newFile;
 		}
 
@@ -852,6 +850,8 @@ class tx_scriptmerger {
 
 		// stop further processing if the file already exists
 		if (file_exists($newFile)) {
+			$properties['basename'] .= '.gz';
+			$properties['content'] = file_get_contents($newFile);
 			return $newFile;
 		}
 
@@ -880,6 +880,8 @@ class tx_scriptmerger {
 
 		// stop further processing if the file already exists
 		if (file_exists($newFile)) {
+			$properties['basename'] .= '.gz';
+			$properties['content'] = file_get_contents($newFile);
 			return $newFile;
 		}
 
