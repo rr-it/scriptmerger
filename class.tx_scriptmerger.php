@@ -585,7 +585,7 @@ class tx_scriptmerger {
 
 		// fetch the head content
 		$head = array();
-		$pattern = '/<head>.*<\/head>/is';
+		$pattern = '/<head>.+?<\/head>/is';
 		preg_match($pattern, $GLOBALS['TSFE']->content, $head);
 		$head = $head[0];
 
@@ -598,25 +598,25 @@ class tx_scriptmerger {
 			'<\/script>\s*' .	// until the possible closing tag.
 			'/is';
 		preg_match_all($pattern, $head, $javascriptTags['head']);
-		//t3lib_div::debug($headJavascriptTags);
+		//t3lib_div::debug($javascriptTags['head']);
 
 		// remove any css code inside the output content
 		if (count($javascriptTags['head'][0])) {
 			$head = preg_replace($pattern, '', $head, count($javascriptTags['head'][0]));
-		}
 
-		// replace head with new one
-		$pattern = '/<head>.*<\/head>/is';
-		$GLOBALS['TSFE']->content = preg_replace(
-			$pattern,
-			$head,
-			$GLOBALS['TSFE']->content
-		);
+			// replace head with new one
+			$pattern = '/<head>.+?<\/head>/is';
+			$GLOBALS['TSFE']->content = preg_replace(
+				$pattern,
+				$head,
+				$GLOBALS['TSFE']->content
+			);
+		}
 
 		// fetch the body content
 		if ($this->extConfig['javascript.']['parseBody'] === '1') {
 			$body = array();
-			$pattern = '/<body>.*<\/body>/is';
+			$pattern = '/<body>.+?<\/body>/is';
 			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
 			$body = $body[0];
 
@@ -629,7 +629,7 @@ class tx_scriptmerger {
 				'<\/script>\s*' .	// until the possible closing tag.
 				'/is';
 			preg_match_all($pattern, $body, $javascriptTags['body']);
-			//t3lib_div::debug($bodyJavascriptTags);
+			//t3lib_div::debug($javascriptTags['body']);
 
 			// remove any css code inside the output content
 			// we leave markers in the form ###100### at the original places to write them
@@ -646,15 +646,15 @@ class tx_scriptmerger {
 					$body,
 					count($javascriptTags['body'][0])
 				);
-			}
 
-			// replace body with new one
-			$pattern = '/<body>.*<\/body>/is';
-			$GLOBALS['TSFE']->content = preg_replace(
-				$pattern,
-				$body,
-				$GLOBALS['TSFE']->content
-			);
+				// replace body with new one
+				$pattern = '/<body>.+?<\/body>/is';
+				$GLOBALS['TSFE']->content = preg_replace(
+					$pattern,
+					$body,
+					$GLOBALS['TSFE']->content
+				);
+			}
 		}
 
 		// parse matches
@@ -700,6 +700,11 @@ class tx_scriptmerger {
 					$this->javascript[$section][$i]['file'] = $source . '.js';
 					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
 					$this->javascript[$section][$i]['basename'] = basename($source);
+
+					// don't merge inline javascript which contains statements like document.write
+					if (preg_match('/document\.write/is', $javascriptContent[1][0])) {
+						$this->javascript[$section][$i]['merge-ignore'] = true;
+					}
 
 				} else {
 					// try to fetch the content of the css file
@@ -843,8 +848,8 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		// compress content
-		$properties['content'] = gzencode($properties['content'], 9);
+		// compress content (FORCE_DEFLATE doesn't work!)
+		$properties['content'] = gzencode($properties['content'], 9, FORCE_GZIP);
 
 		// save content inside the new file
 		t3lib_div::writeFile($newFile, $properties['content']);
@@ -873,8 +878,8 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		// compress content
-		$properties['content'] = gzencode($properties['content'], 9);
+		// compress content (FORCE_DEFLATE doesn't work!)
+		$properties['content'] = gzencode($properties['content'], 9, FORCE_GZIP);
 
 		// save content inside the new file
 		t3lib_div::writeFile($newFile, $properties['content']);
@@ -930,13 +935,17 @@ class tx_scriptmerger {
 	protected function writeJavascriptToDocument() {
 		// write all files back to the document
 		foreach ($this->javascript as $section => $javascriptBySection) {
+			if (!is_array($javascriptBySection)) {
+				continue;
+			}
+
 			// prepare pattern
 			$pattern = '/<\/' . $section . '>/is';
 			if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
 				$pattern = '/<\/body>/is';
 			}
 
-			ksort($javascriptProperties);
+			ksort($javascriptBySection);
 			foreach ($javascriptBySection as $index => $javascriptProperties) {
 				$file = $javascriptProperties['file'];
 
