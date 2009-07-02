@@ -723,7 +723,7 @@ class tx_scriptmerger {
 					if ($this->extConfig['javascript.']['doNotRemoveInDocInBody'] === '1' &&
 						$section === 'body'
 					) {
-						$this->javascript[$section][$i]['minify-ignore'] = true;
+						$this->javascript[$section][$i]['minify-ignore'] = false;
 						$this->javascript[$section][$i]['compress-ignore'] = true;
 						$this->javascript[$section][$i]['merge-ignore'] = true;
 						$this->javascript[$section][$i]['addInDocument'] = true;
