@@ -160,7 +160,16 @@ class tx_scriptmerger {
 				$this->extConfig[$key] = $value;
 			}
 		}
-		
+
+		// no compression allowed if content should be added inside the document
+		if ($this->extConfig['css.']['addContentInDocument'] === '1') {
+			$this->extConfig['css.']['compress.']['enable'] = '0';
+		}
+
+		if ($this->extConfig['javascript.']['addContentInDocument'] === '1') {
+			$this->extConfig['javascript.']['compress.']['enable'] = '0';
+		}
+
 		// prepare ignore expressions
 		if ($this->extConfig['css.']['minify.']['ignore'] !== '') {
 			$this->extConfig['css.']['minify.']['ignore'] = '/.*(' .
@@ -440,6 +449,15 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function getCSSfiles() {
+		// filter pattern for the inDoc styles (fetches the content)
+		$filterInDocumentPattern = '/' .
+			'<style.*?>' .					// This expression removes the opening style tag
+			'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
+			'\s*(.*?)' .					// We save the pure css content,
+			'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
+			'\s*<\/style>' .				// and closing style tag
+			'/is';
+
 		// parse all available css code inside link and style tags
 		$cssTags = array();
 		$pattern = '/' .
@@ -477,22 +495,24 @@ class tx_scriptmerger {
 			// get source attribute
 			$source = $cssTags[4][$i];
 
+			// add basic entry
+			$this->css[$relation][$media][$i]['minify-ignore'] = false;
+			$this->css[$relation][$media][$i]['compress-ignore'] = false;
+			$this->css[$relation][$media][$i]['merge-ignore'] = false;
+			$this->css[$relation][$media][$i]['source'] = $source;
+			$this->css[$relation][$media][$i]['content'] = '';
+			$this->css[$relation][$media][$i]['basename'] = '';
+
 			// styles which are added inside the document must be parsed again
 			// to fetch the pure css code
 			if ($cssTags[1][$i] === 'style') {
 				$cssContent = array();
-				$pattern = '/' .
-					'<style.*?>' .					// This expression removes the opening style tag
-					'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
-					'\s*(.*?)' .					// We save the pure css content,
-					'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
-					'\s*<\/style>' .				// and closing style tag
-					'/is';
-				preg_match_all($pattern, $cssTags[0][$i], $cssContent);
+				preg_match_all($filterInDocumentPattern, $cssTags[0][$i], $cssContent);
 				//t3lib_div::debug($cssContent);
 
 				// we doesn't need to continue if it was an empty style tag
 				if ($cssContent[1][0] === '') {
+					unset($this->css[$relation][$media][$i]);
 					continue;
 				}
 
@@ -506,9 +526,6 @@ class tx_scriptmerger {
 
 				// try to resolve any @import occurences
 				$content = Minify_ImportProcessor::process($source);
-				$this->css[$relation][$media][$i]['minify-ignore'] = false;
-				$this->css[$relation][$media][$i]['compress-ignore'] = false;
-				$this->css[$relation][$media][$i]['merge-ignore'] = false;
 				$this->css[$relation][$media][$i]['file'] = $source . '.css';
 				$this->css[$relation][$media][$i]['content'] = $cssContent[1][0];
 				$this->css[$relation][$media][$i]['basename'] = basename($source);
@@ -527,17 +544,10 @@ class tx_scriptmerger {
 					$this->css[$relation][$media][$i]['minify-ignore'] = true;
 					$this->css[$relation][$media][$i]['compress-ignore'] = true;
 					$this->css[$relation][$media][$i]['merge-ignore'] = true;
-					$this->css[$relation][$media][$i]['source'] = $source;
-					$this->css[$relation][$media][$i]['content'] = '';
-					$this->css[$relation][$media][$i]['basename'] = '';
 					continue;
 				}
 
 				// check if the file should be ignored for some processes
-				$this->css[$relation][$media][$i]['minify-ignore'] = false;
-				$this->css[$relation][$media][$i]['compress-ignore'] = false;
-				$this->css[$relation][$media][$i]['merge-ignore'] = false;
-
 				if ($this->extConfig['css.']['minify.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['css.']['minify.']['ignore'], $source)) {
 						$this->css[$relation][$media][$i]['minify-ignore'] = true;
@@ -557,7 +567,6 @@ class tx_scriptmerger {
 				}
 
 				// set the css file with it's content
-				$this->css[$relation][$media][$i]['source'] = $source;
 				$this->css[$relation][$media][$i]['content'] = $content;
 			}
 
@@ -583,6 +592,26 @@ class tx_scriptmerger {
 			'body' => array()
 		);
 
+		// create search pattern
+		$searchScriptsPattern = '/' .
+			'<script' .			// This expression includes any script nodes
+				'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
+				'(?=.+?(?:src="(.*?)"|>))' .				// It fetches the src attribute.
+			'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
+			'<\/script>\s*' .	// until the possible closing tag.
+			'/is';
+
+		// filter pattern for the inDoc scripts (fetches the content)
+		$filterInDocumentPattern =  '/' .
+			'<script.*?>' .					// The expression removes the opening script tag
+			'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
+			'(?:.*?<!--)?' .				// senseless <!-- construct
+			'\s*(.*?)' .					// We save the pure css content,
+			'(?:\s*\/\/\s*-->)?' .			// senseless <!-- construct
+			'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
+			'\s*<\/script>' .				// and closing script tag
+			'/is';
+
 		// fetch the head content
 		$head = array();
 		$pattern = '/<head>.+?<\/head>/is';
@@ -590,19 +619,17 @@ class tx_scriptmerger {
 		$head = $head[0];
 
 		// parse all available css code inside script tags
-		$pattern = '/' .
-			'<script' .			// This expression includes any script nodes
-				'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
-				'(?=.+?(?:src="(.*?)"|>))' .				// It fetches the src attribute.
-			'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
-			'<\/script>\s*' .	// until the possible closing tag.
-			'/is';
-		preg_match_all($pattern, $head, $javascriptTags['head']);
+		preg_match_all($searchScriptsPattern, $head, $javascriptTags['head']);
 		//t3lib_div::debug($javascriptTags['head']);
 
 		// remove any css code inside the output content
 		if (count($javascriptTags['head'][0])) {
-			$head = preg_replace($pattern, '', $head, count($javascriptTags['head'][0]));
+			$head = preg_replace(
+				$searchScriptsPattern,
+				'',
+				$head,
+				count($javascriptTags['head'][0])
+			);
 
 			// replace head with new one
 			$pattern = '/<head>.+?<\/head>/is';
@@ -621,14 +648,7 @@ class tx_scriptmerger {
 			$body = $body[0];
 
 			// parse all available css code inside script tags
-			$pattern = '/' .
-				'<script' .			// This expression includes any script nodes
-					'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
-					'(?=.+?(?:src="(.*?)"|>))' .				// It fetches the src attribute.
-				'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
-				'<\/script>\s*' .	// until the possible closing tag.
-				'/is';
-			preg_match_all($pattern, $body, $javascriptTags['body']);
+			preg_match_all($searchScriptsPattern, $body, $javascriptTags['body']);
 			//t3lib_div::debug($javascriptTags['body']);
 
 			// remove any css code inside the output content
@@ -641,7 +661,7 @@ class tx_scriptmerger {
 				);
 
 				$body = preg_replace_callback(
-					$pattern,
+					$searchScriptsPattern,
 					$function,
 					$body,
 					count($javascriptTags['body'][0])
@@ -664,24 +684,25 @@ class tx_scriptmerger {
 				// get source attribute
 				$source = $results[2][$i];
 
+				// add basic entry
+				$this->javascript[$section][$i]['minify-ignore'] = false;
+				$this->javascript[$section][$i]['compress-ignore'] = false;
+				$this->javascript[$section][$i]['merge-ignore'] = false;
+				$this->javascript[$section][$i]['file'] = $source;
+				$this->javascript[$section][$i]['content'] = '';
+				$this->javascript[$section][$i]['basename'] = '';
+				$this->javascript[$section][$i]['addInDocument'] = false;
+
 				// styles which are added inside the document must be parsed again
 				// to fetch the pure css code
 				if ($source === '') {
 					$javascriptContent = array();
-					$pattern = '/' .
-						'<script.*?>' .					// The expression removes the opening script tag
-						'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
-						'(?:.*?<!--)?' .				// senseless <!-- construct
-						'\s*(.*?)' .					// We save the pure css content,
-						'(?:\s*\/\/\s*-->)?' .			// senseless <!-- construct
-						'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
-						'\s*<\/script>' .				// and closing script tag
-						'/is';
-					preg_match_all($pattern, $results[0][$i], $javascriptContent);
+					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
 					//t3lib_div::debug($javascriptContent);
 
 					// we doesn't need to continue if it was an empty style tag
 					if ($javascriptContent[1][0] === '') {
+						unset($this->javascript[$section][$i]);
 						continue;
 					}
 
@@ -694,16 +715,18 @@ class tx_scriptmerger {
 					}
 
 					// try to resolve any @import occurences
-					$this->javascript[$section][$i]['minify-ignore'] = false;
-					$this->javascript[$section][$i]['compress-ignore'] = false;
-					$this->javascript[$section][$i]['merge-ignore'] = false;
 					$this->javascript[$section][$i]['file'] = $source . '.js';
 					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
 					$this->javascript[$section][$i]['basename'] = basename($source);
 
-					// don't merge inline javascript which contains statements like document.write
-					if (preg_match('/document\.write/is', $javascriptContent[1][0])) {
+					// inDocument styles of the body shouldn't be removed from their position
+					if ($this->extConfig['javascript.']['doNotRemoveInDocInBody'] === '1' &&
+						$section === 'body'
+					) {
+						$this->javascript[$section][$i]['minify-ignore'] = false;
+						$this->javascript[$section][$i]['compress-ignore'] = true;
 						$this->javascript[$section][$i]['merge-ignore'] = true;
+						$this->javascript[$section][$i]['addInDocument'] = true;
 					}
 
 				} else {
@@ -721,17 +744,10 @@ class tx_scriptmerger {
 						$this->javascript[$section][$i]['minify-ignore'] = true;
 						$this->javascript[$section][$i]['compress-ignore'] = true;
 						$this->javascript[$section][$i]['merge-ignore'] = true;
-						$this->javascript[$section][$i]['file'] = $source;
-						$this->javascript[$section][$i]['content'] = '';
-						$this->javascript[$section][$i]['basename'] = '';
 						continue;
 					}
 
 					// check if the file should be ignored for some processes
-					$this->javascript[$section][$i]['minify-ignore'] = false;
-					$this->javascript[$section][$i]['compress-ignore'] = false;
-					$this->javascript[$section][$i]['merge-ignore'] = false;
-
 					if ($this->extConfig['javascript.']['minify.']['ignore'] !== '' &&
 						preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)
 					) {
@@ -912,9 +928,16 @@ class tx_scriptmerger {
 							str_replace(PATH_site, '', $file);
 					}
 
-					// build css link
-					$content = "\t" . '<link rel="' . $relation . '" type="text/css" ' .
-						'media="' . $media . '" href="' . $file . '" />' . "\n";
+					// build css script link or add the content directly into the document
+					if ($this->extConfig['css.']['addContentInDocument'] === '1') {
+						$content = "\t" .
+							'<style media="' . $media . '" type="text/css">' . "\n" .
+							"\t" . $cssProperties['content'] . "\n" .
+							"\t" . '</style>' . "\n";
+					} else {
+						$content = "\t" . '<link rel="' . $relation . '" type="text/css" ' .
+							'media="' . $media . '" href="' . $file . '" />' . "\n";
+					}
 
 					// add content right before the closing head tag
 					$GLOBALS['TSFE']->content = preg_replace(
@@ -954,9 +977,18 @@ class tx_scriptmerger {
 					$file = $GLOBALS['TSFE']->absRefPrefix . str_replace(PATH_site, '', $file);
 				}
 
-				// build javascript script link
-				$content = "\t" .
-					'<script type="text/javascript" src="' . $file . '"></script>' . "\n";
+				// build javascript script link or add the content directly into the document
+				if ($javascriptProperties['addInDocument'] ||
+					$this->extConfig['javascript.']['addContentInDocument'] === '1'
+				) {
+					$content = "\t" .
+						'<script type="text/javascript">' . "\n" .
+						"\t" . $javascriptProperties['content'] . "\n" .
+						"\t" . '</script>' . "\n";
+				} else {
+					$content = "\t" .
+						'<script type="text/javascript" src="' . $file . '"></script>' . "\n";
+				}
 
 				// add body script backt to their original place if they were ignored
 				if ($section == 'body' && $javascriptProperties['merge-ignore']) {

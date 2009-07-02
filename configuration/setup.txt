@@ -2,6 +2,7 @@ plugin.tx_scriptmerger {
 	# minification, compressing and merging of css files
 	css {
 		enable = {$plugin.tx_scriptmerger.css.enable}
+		addContentInDocument = {$plugin.tx_scriptmerger.css.addContentInDocument}
 
 		# minification
 		minify {
@@ -27,6 +28,8 @@ plugin.tx_scriptmerger {
 		enable = {$plugin.tx_scriptmerger.javascript.enable}
 		parseBody = {$plugin.tx_scriptmerger.javascript.parseBody}
 		addBeforeBody = {$plugin.tx_scriptmerger.javascript.addBeforeBody}
+		doNotRemoveInDocInBody = {$plugin.tx_scriptmerger.javascript.doNotRemoveInDocInBody}
+		addContentInDocument = {$plugin.tx_scriptmerger.javascript.addContentInDocument}
 
 		# minification
 		minify {
