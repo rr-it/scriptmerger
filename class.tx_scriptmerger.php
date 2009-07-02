@@ -42,7 +42,7 @@ require_once(t3lib_extMgm::extPath('scriptmerger') .
 
 /** Minify: JSMin+ */
 require_once(t3lib_extMgm::extPath('scriptmerger') .
-	'resources/minify/lib/JSMinPlus.php');
+	'resources/jsminplus.php');
 
 /**
  * This class contains the parsing and replacing functionality of css and javascript files.
