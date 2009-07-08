@@ -124,9 +124,7 @@ class tx_scriptmerger {
 	 */
 	public function contentPostProcAll() {
 		// don't use this hook if no uncached informations are available
-		if ($GLOBALS['TSFE']->config['config']['no_cache'] != 1 &&
-			t3lib_div::_GP('no_cache') != 1
-		) {
+		if (!$GLOBALS['TSFE']->no_cache) {
 			return;
 		}
 
