@@ -483,8 +483,8 @@ class tx_scriptmerger {
 		// parse matches
 		$amountOfResults = count($cssTags[0]);
 		for ($i = 0; $i < $amountOfResults; ++$i) {
-			// get media attribute (screen as default if it's empty)
-			$media = ($cssTags[3][$i] === '') ? 'screen' : $cssTags[3][$i];
+			// get media attribute (all as default if it's empty)
+			$media = ($cssTags[3][$i] === '') ? 'all' : $cssTags[3][$i];
 			$media = implode(',', array_map('trim', explode(',', $media)));
 
 			// get rel attribute (stylesheet as default if it's empty)
