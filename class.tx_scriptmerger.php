@@ -530,7 +530,8 @@ class tx_scriptmerger {
 			} else {
 				// try to fetch the content of the css file
 				$content = '';
-				$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $source);
+				$file = ($source{0} === '/' ? substr($source, 1) : $source);
+				$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $file);
 				if (file_exists($file)) {
 					$content = Minify_ImportProcessor::process($file);
 				} else {
@@ -730,7 +731,8 @@ class tx_scriptmerger {
 				} else {
 					// try to fetch the content of the css file
 					$content = '';
-					$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $source);
+					$file = ($source{0} === '/' ? substr($source, 1) : $source);
+					$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $file);
 					if (file_exists($file)) {
 						$content = file_get_contents($file);
 					} else {
