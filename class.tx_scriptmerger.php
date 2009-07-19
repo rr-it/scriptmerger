@@ -497,7 +497,7 @@ class tx_scriptmerger {
 			$this->css[$relation][$media][$i]['minify-ignore'] = false;
 			$this->css[$relation][$media][$i]['compress-ignore'] = false;
 			$this->css[$relation][$media][$i]['merge-ignore'] = false;
-			$this->css[$relation][$media][$i]['source'] = $source;
+			$this->css[$relation][$media][$i]['file'] = $source;
 			$this->css[$relation][$media][$i]['content'] = '';
 			$this->css[$relation][$media][$i]['basename'] = '';
 
