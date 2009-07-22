@@ -464,7 +464,7 @@ class tx_scriptmerger {
 				'(?=.+?(?:media="(.*?)"|>))' .		// It fetches the media attribute
 				'(?=.+?(?:href="(.*?)"|>))' .		// and the href attribute
 				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute of the node.
-			'.+?\2.+?' .				// Finally we finish the parsing of the opening tag
+			'[^>]+?\2[^>]+?' .				// Finally we finish the parsing of the opening tag
 			'(?:\/>|<\/style>)\s*' .	// until the possible closing tag.
 			'/is';
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $cssTags);
