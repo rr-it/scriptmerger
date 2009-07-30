@@ -932,9 +932,9 @@ class tx_scriptmerger {
 					if ($this->extConfig['css.']['addContentInDocument'] === '1') {
 						$content = "\t" .
 							'<style media="' . $media . '" type="text/css">' . "\n" .
-							"\t" . '/* <![CDATA[ */' .
+							"\t" . '/* <![CDATA[ */' . "\n" .
 							"\t" . $cssProperties['content'] . "\n" .
-							"\t" . '/* ]]> */' .
+							"\t" . '/* ]]> */' . "\n" .
 							"\t" . '</style>' . "\n";
 					} else {
 						$content = "\t" . '<link rel="' . $relation . '" type="text/css" ' .
@@ -985,9 +985,9 @@ class tx_scriptmerger {
 				) {
 					$content = "\t" .
 						'<script type="text/javascript">' . "\n" .
-						"\t" . '/* <![CDATA[ */' .
+						"\t" . '/* <![CDATA[ */' . "\n" .
 						"\t" . $javascriptProperties['content'] . "\n" .
-						"\t" . '/* ]]> */' .
+						"\t" . '/* ]]> */' . "\n" .
 						"\t" . '</script>' . "\n";
 				} else {
 					$content = "\t" .
