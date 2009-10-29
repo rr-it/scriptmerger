@@ -118,14 +118,17 @@ class tx_scriptmerger {
 	}
 
 	/**
-	 * Just a wrapper for the main function! It's used for the contentPostProc-all hook.
+	 * Just a wrapper for the main function! It's used for the contentPostProc-output hook.
 	 *
 	 * @return void
 	 */
-	public function contentPostProcAll() {
-		// don't use this hook if no uncached informations are available
-		if (!$GLOBALS['TSFE']->no_cache) {
-			return;
+	public function contentPostProcOutput() {
+		// only enter this hook if the page shouldn't be cached or has COA_INT
+		// or USER_INT objects
+		if (!$GLOBALS['TSFE']->no_cache
+			&& !$GLOBALS['TSFE']->isINTincScript()
+		) {
+			return true;
 		}
 
 		$this->main();
@@ -137,6 +140,14 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	public function contentPostProcCached() {
+		// only enter this hook if the page should be cached and hasn't any COA_INT
+		// or USER_INT objects
+		if ($GLOBALS['TSFE']->no_cache
+			|| $GLOBALS['TSFE']->isINTincScript()
+		) {
+			return true;
+		}
+
 		$this->main();
 	}
 
