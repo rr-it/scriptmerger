@@ -12,8 +12,8 @@ $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['t3lib/class.t3lib_tcemain.php']['clea
 if (TYPO3_MODE == 'FE') {
 	$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-output'][] =
 		'EXT:scriptmerger/class.tx_scriptmerger.php:tx_scriptmerger->contentPostProcOutput';
-	$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-cached'][] =
-		'EXT:scriptmerger/class.tx_scriptmerger.php:tx_scriptmerger->contentPostProcCached';
+	$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-all'][] =
+		'EXT:scriptmerger/class.tx_scriptmerger.php:tx_scriptmerger->contentPostProcAll';
 }
 
 ?>
