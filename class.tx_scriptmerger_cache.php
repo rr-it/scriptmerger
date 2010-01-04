@@ -38,12 +38,14 @@
  * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
 class tx_scriptmerger_cache {
-	/* @var $tempDirectories array holds directories which should be checked */
-	private $tempDirectories = array();
+	/**
+	 * Contains the temporary directories of this extension.
+	 *
+	 *  @var array
+	 */
+	protected $tempDirectories = array();
 
 	/**
-	 * CONSTRUCTOR
-	 * 
 	 * Initializes some class variables...
 	 * 
 	 * @return void
@@ -60,13 +62,12 @@ class tx_scriptmerger_cache {
 	}
 
 	/**
-	 * Clear cache post processor.
+	 * Clear cache post processor
 	 *
-	 * This method deletes all pdf files which are older than one month. The deletion
-	 * prevents an in
+	 * This method deletes all temporary files.
 	 *
 	 * @param object $params parameter array
-	 * @param object $pObj partent object
+	 * @param object $pObj parent object
 	 * @return void
 	 */
 	public function clearCachePostProc(&$params, &$pObj) {
@@ -75,8 +76,7 @@ class tx_scriptmerger_cache {
 			return;
 		}
 
-		// remove any files in the directories array which are older than one month
-		$now = time();
+		// remove any files in the directories array that are older than one month
 		foreach ($this->tempDirectories as $tempDirectory) {
 			if (!is_dir($tempDirectory)) {
 				continue;
@@ -89,13 +89,7 @@ class tx_scriptmerger_cache {
 				}
 
 				if (is_file($tempDirectory . $file)) {
-					// get last modification time
-					$lastAccess = fileatime($tempDirectory . $file);
-					$age = $now - $lastAccess;
-
-					if ($age >= 1209600) {
-						unlink($tempDirectory . $file);
-					}
+					unlink($tempDirectory . $file);
 				}
 			}
 		}

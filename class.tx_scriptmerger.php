@@ -40,12 +40,6 @@ require_once(t3lib_extMgm::extPath('scriptmerger') .
 require_once(t3lib_extMgm::extPath('scriptmerger') .
 	'resources/minify/lib/Minify/CSS.php');
 
-if (!class_exists(JSMinPlus)) {
-	/** Minify: JSMin+ */
-	require_once(t3lib_extMgm::extPath('scriptmerger') .
-		'resources/jsminplus.php');
-}
-
 /**
  * This class contains the parsing and replacing functionality of css and javascript files.
  * Furthermore several wrapper methods to the project minify are available to minify, merge
@@ -223,136 +217,55 @@ class tx_scriptmerger {
 	/**
 	 * Contains the process logic of the whole plugin!
 	 *
+	 * @todo tbd
 	 * @return void
 	 */
 	protected function main() {
 		if ($this->extConfig['css.']['enable'] === '1') {
-			// save the conditional comments
-			$this->getConditionalComments();
-
-			// fetch all remaining css contents
-			$this->getCSSfiles();
-
-			// minify, compress and merging
-			foreach ($this->css as $relation => $cssByRelation) {
-				foreach ($cssByRelation as $media => $cssByMedia) {
-					$mergedContent = '';
-					$firstFreeIndex = -1;
-					foreach ($cssByMedia as $index => $cssProperties) {
-						$newFile = '';
-
-						// file should be minified
-						if ($this->extConfig['css.']['minify.']['enable'] === '1' &&
-							!$cssProperties['minify-ignore']
-						) {
-							$newFile = $this->minifyCSSfile($cssProperties);
-						}
-
-						// file should be merged
-						if ($this->extConfig['css.']['merge.']['enable'] === '1' &&
-							!$cssProperties['merge-ignore']
-						) {
-							if ($firstFreeIndex < 0) {
-								$firstFreeIndex = $index;
-							}
-
-							// add content
-							$mergedContent .= $cssProperties['content'] . "\n";
-
-							// remove file from array
-							unset($this->css[$relation][$media][$index]);
-
-							// we doesn't need to compress or add a new file to the array,
-							// because the last one will finally not be needed anymore
-							continue;
-						}
-
-						// file should be compressed instead?
-						if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
-							function_exists('gzcompress') && !$cssProperties['compress-ignore']
-						) {
-							$newFile = $this->compressCSSfile($cssProperties);
-						}
-
-						// minification or compression was used
-						if ($newFile !== '') {
-							$this->css[$relation][$media][$index]['file'] = $newFile;
-							$this->css[$relation][$media][$index]['content'] =
-								$cssProperties['content'];
-							$this->css[$relation][$media][$index]['basename'] =
-								$cssProperties['basename'];
-						}
-					}
-
-					// save merged content inside a new file
-					if ($this->extConfig['css.']['merge.']['enable'] === '1') {
-						// create property array
-						$properties = array (
-							'content' => $mergedContent,
-							'basename' => 'head-' . md5($mergedContent) . '.merged'
-						);
-
-						// file should be compressed
-						$newFile = '';
-						if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
-							function_exists('gzcompress')
-						) {
-							$newFile = $this->compressCSSfile($properties);
-						} else {
-							$newFile = $this->tempDirectories['merged'] .
-								$properties['basename'] . '.css';
-
-							if (!file_exists($newFile)) {
-								t3lib_div::writeFile($newFile, $properties['content']);
-							}
-						}
-
-						// add new entry
-						$this->css[$relation][$media][$firstFreeIndex]['file'] = $newFile;
-						$this->css[$relation][$media][$firstFreeIndex]['content'] =
-							$properties['content'];
-						$this->css[$relation][$media][$firstFreeIndex]['basename'] =
-							$properties['basename'];
-					}
-				}
-			}
-			
-			// write the conditional comments and possibly merged css files back to the document
-			$this->writeCSStoDocument();
-			$this->writeConditionalCommentsToDocument();
+			$this->processCSSfiles();
 		}
 
 		if ($this->extConfig['javascript.']['enable'] === '1') {
-			// fetch all javascript content
-			$this->getJavascriptFiles();
-			
-			// minify, compress and merging
-			foreach ($this->javascript as $section => $javascriptBySection) {
+			$this->processJavascriptFiles();
+		}
+	}
+
+	// @todo tbd
+	protected function processCSSfiles() {
+		// save the conditional comments
+		$this->getConditionalComments();
+
+		// fetch all remaining css contents
+		$this->getCSSfiles();
+
+		// minify, compress and merging
+		foreach ($this->css as $relation => $cssByRelation) {
+			foreach ($cssByRelation as $media => $cssByMedia) {
 				$mergedContent = '';
 				$firstFreeIndex = -1;
-				foreach ($javascriptBySection as $index => $javascriptProperties) {
+				foreach ($cssByMedia as $index => $cssProperties) {
 					$newFile = '';
 
 					// file should be minified
-					if ($this->extConfig['javascript.']['minify.']['enable'] === '1' &&
-						!$javascriptProperties['minify-ignore']
+					if ($this->extConfig['css.']['minify.']['enable'] === '1' &&
+						!$cssProperties['minify-ignore']
 					) {
-						$newFile = $this->minifyJavascriptFile($javascriptProperties);
+						$newFile = $this->minifyCSSfile($cssProperties);
 					}
 
 					// file should be merged
-					if ($this->extConfig['javascript.']['merge.']['enable'] === '1' &&
-						!$javascriptProperties['merge-ignore']
+					if ($this->extConfig['css.']['merge.']['enable'] === '1' &&
+						!$cssProperties['merge-ignore']
 					) {
 						if ($firstFreeIndex < 0) {
 							$firstFreeIndex = $index;
 						}
 
 						// add content
-						$mergedContent .= $javascriptProperties['content'] . "\n";
+						$mergedContent .= $cssProperties['content'] . "\n";
 
 						// remove file from array
-						unset($this->javascript[$section][$index]);
+						unset($this->css[$relation][$media][$index]);
 
 						// we doesn't need to compress or add a new file to the array,
 						// because the last one will finally not be needed anymore
@@ -360,39 +273,39 @@ class tx_scriptmerger {
 					}
 
 					// file should be compressed instead?
-					if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
-						function_exists('gzcompress') && !$javascriptProperties['compress-ignore']
+					if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
+						function_exists('gzcompress') && !$cssProperties['compress-ignore']
 					) {
-						$newFile = $this->compressJavascriptFile($javascriptProperties);
+						$newFile = $this->compressCSSfile($cssProperties);
 					}
 
 					// minification or compression was used
 					if ($newFile !== '') {
-						$this->javascript[$section][$index]['file'] = $newFile;
-						$this->javascript[$section][$index]['content'] =
-							$javascriptProperties['content'];
-						$this->javascript[$section][$index]['basename'] =
-							$javascriptProperties['basename'];
+						$this->css[$relation][$media][$index]['file'] = $newFile;
+						$this->css[$relation][$media][$index]['content'] =
+							$cssProperties['content'];
+						$this->css[$relation][$media][$index]['basename'] =
+							$cssProperties['basename'];
 					}
 				}
 
 				// save merged content inside a new file
-				if ($this->extConfig['javascript.']['merge.']['enable'] === '1') {
+				if ($this->extConfig['css.']['merge.']['enable'] === '1') {
 					// create property array
 					$properties = array (
 						'content' => $mergedContent,
-						'basename' => $section . '-' . md5($mergedContent) . '.merged'
+						'basename' => 'head-' . md5($mergedContent) . '.merged'
 					);
 
 					// file should be compressed
 					$newFile = '';
-					if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
+					if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
 						function_exists('gzcompress')
 					) {
-						$newFile = $this->compressJavascriptFile($properties);
+						$newFile = $this->compressCSSfile($properties);
 					} else {
 						$newFile = $this->tempDirectories['merged'] .
-							$properties['basename'] . '.js';
+							$properties['basename'] . '.css';
 
 						if (!file_exists($newFile)) {
 							t3lib_div::writeFile($newFile, $properties['content']);
@@ -400,20 +313,112 @@ class tx_scriptmerger {
 					}
 
 					// add new entry
-					$this->javascript[$section][$firstFreeIndex]['file'] = $newFile;
-					$this->javascript[$section][$firstFreeIndex]['content'] =
+					$this->css[$relation][$media][$firstFreeIndex]['file'] = $newFile;
+					$this->css[$relation][$media][$firstFreeIndex]['content'] =
 						$properties['content'];
-					$this->javascript[$section][$firstFreeIndex]['basename'] =
+					$this->css[$relation][$media][$firstFreeIndex]['basename'] =
 						$properties['basename'];
-						
-					// reset merged content variable
-					$mergedContent = '';
+				}
+			}
+		}
+
+		// write the conditional comments and possibly merged css files back to the document
+		$this->writeCSStoDocument();
+		$this->writeConditionalCommentsToDocument();
+	}
+
+	// @todo tbd
+	protected function processJavascriptFiles() {
+		// fetch all javascript content
+		$this->getJavascriptFiles();
+
+		// minify, compress and merging
+		foreach ($this->javascript as $section => $javascriptBySection) {
+			$mergedContent = '';
+			$firstFreeIndex = -1;
+			foreach ($javascriptBySection as $index => $javascriptProperties) {
+				$newFile = '';
+
+				// file should be minified
+				if ($this->extConfig['javascript.']['minify.']['enable'] === '1' &&
+					!$javascriptProperties['minify-ignore']
+				) {
+					$newFile = $this->minifyJavascriptFile($javascriptProperties);
+				}
+
+				// file should be merged
+				if ($this->extConfig['javascript.']['merge.']['enable'] === '1' &&
+					!$javascriptProperties['merge-ignore']
+				) {
+					if ($firstFreeIndex < 0) {
+						$firstFreeIndex = $index;
+					}
+
+					// add content
+					$mergedContent .= $javascriptProperties['content'] . "\n";
+
+					// remove file from array
+					unset($this->javascript[$section][$index]);
+
+					// we doesn't need to compress or add a new file to the array,
+					// because the last one will finally not be needed anymore
+					continue;
+				}
+
+				// file should be compressed instead?
+				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
+					function_exists('gzcompress') && !$javascriptProperties['compress-ignore']
+				) {
+					$newFile = $this->compressJavascriptFile($javascriptProperties);
+				}
+
+				// minification or compression was used
+				if ($newFile !== '') {
+					$this->javascript[$section][$index]['file'] = $newFile;
+					$this->javascript[$section][$index]['content'] =
+						$javascriptProperties['content'];
+					$this->javascript[$section][$index]['basename'] =
+						$javascriptProperties['basename'];
 				}
 			}
 
-			// write javascript content back to the document
-			$this->writeJavascriptToDocument();
+			// save merged content inside a new file
+			if ($this->extConfig['javascript.']['merge.']['enable'] === '1') {
+				// create property array
+				$properties = array (
+					'content' => $mergedContent,
+					'basename' => $section . '-' . md5($mergedContent) . '.merged'
+				);
+
+				// file should be compressed
+				$newFile = '';
+				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
+					function_exists('gzcompress')
+				) {
+					$newFile = $this->compressJavascriptFile($properties);
+				} else {
+					$newFile = $this->tempDirectories['merged'] .
+						$properties['basename'] . '.js';
+
+					if (!file_exists($newFile)) {
+						t3lib_div::writeFile($newFile, $properties['content']);
+					}
+				}
+
+				// add new entry
+				$this->javascript[$section][$firstFreeIndex]['file'] = $newFile;
+				$this->javascript[$section][$firstFreeIndex]['content'] =
+					$properties['content'];
+				$this->javascript[$section][$firstFreeIndex]['basename'] =
+					$properties['basename'];
+
+				// reset merged content variable
+				$mergedContent = '';
+			}
 		}
+
+		// write javascript content back to the document
+		$this->writeJavascriptToDocument();
 	}
 
 	/**
@@ -427,7 +432,6 @@ class tx_scriptmerger {
 		// parse the conditional comments
 		$pattern = '/<!--\[if.+?<!\[endif\]-->\s*/is';
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $this->conditionalComments);
-		//t3lib_div::debug($this->conditionalComments);
 		if (!$this->conditionalComments[0]) {
 			return;
 		}
@@ -482,7 +486,6 @@ class tx_scriptmerger {
 			'(?:\/>|<\/style>)\s*' .	// until the possible closing tag.
 			'/is';
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $cssTags);
-		//t3lib_div::debug($cssTags);
 		if (!count($cssTags[0])) {
 			return;
 		}
@@ -520,7 +523,6 @@ class tx_scriptmerger {
 			if ($cssTags[1][$i] === 'style') {
 				$cssContent = array();
 				preg_match_all($filterInDocumentPattern, $cssTags[0][$i], $cssContent);
-				//t3lib_div::debug($cssContent);
 
 				// we doesn't need to continue if it was an empty style tag
 				if ($cssContent[1][0] === '') {
@@ -633,7 +635,6 @@ class tx_scriptmerger {
 
 		// parse all available css code inside script tags
 		preg_match_all($searchScriptsPattern, $head, $javascriptTags['head']);
-		//t3lib_div::debug($javascriptTags['head']);
 
 		// remove any css code inside the output content
 		if (count($javascriptTags['head'][0])) {
@@ -662,7 +663,6 @@ class tx_scriptmerger {
 
 			// parse all available css code inside script tags
 			preg_match_all($searchScriptsPattern, $body, $javascriptTags['body']);
-			//t3lib_div::debug($javascriptTags['body']);
 
 			// remove any css code inside the output content
 			// we leave markers in the form ###100### at the original places to write them
@@ -711,7 +711,6 @@ class tx_scriptmerger {
 				if ($source === '') {
 					$javascriptContent = array();
 					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
-					//t3lib_div::debug($javascriptContent);
 
 					// we doesn't need to continue if it was an empty style tag
 					if ($javascriptContent[1][0] === '') {
@@ -831,8 +830,10 @@ class tx_scriptmerger {
 	
 	/**
 	 * This method minifies a javascript file. It's based upon the JSMin+ class
-	 * of the project minify.
+	 * of the project minify. Alternativly the old JSMin class can be used, but it's
+	 * definitly not the prefered solution!
 	 *
+	 * @todo document jsminplus option
 	 * @param array $properties properties of an entry (copy-by-reference is used!)
 	 * @return string new filename
 	 */
@@ -848,8 +849,23 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		// minify content
-		$properties['content'] = JSMinPlus::minify($properties['content']);
+		// minify content (the ending semicolon must be added to prevent minification bugs)
+		if ($this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
+			if (!class_exists(JSMinPlus)) {
+				/** Minify: JSMin+ */
+				require_once(t3lib_extMgm::extPath('scriptmerger') .
+					'resources/jsminplus.php');
+			}
+
+			$properties['content'] = JSMinPlus::minify($properties['content']) . ';';
+		} else {
+			if (!class_exists(JSMin)) {
+				/** Minify: JSMin */
+				require_once(PATH_typo3 . 'contrib/jsmin/jsmin.php');
+			}
+
+			$properties['content'] = JSMin::minify($properties['content']) . ';';
+		}
 
 		// save content inside the new file
 		t3lib_div::writeFile($newFile, $properties['content']);
