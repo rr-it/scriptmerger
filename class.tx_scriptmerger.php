@@ -40,6 +40,15 @@ require_once(t3lib_extMgm::extPath('scriptmerger') .
 require_once(t3lib_extMgm::extPath('scriptmerger') .
 	'resources/minify/lib/Minify/CSS.php');
 
+require_once(t3lib_extMgm::extPath('scriptmerger') .
+	'resources/minify/lib/Minify/CommentPreserver.php');
+
+require_once(t3lib_extMgm::extPath('scriptmerger') .
+	'resources/minify/lib/Minify/CSS/Compressor.php');
+
+require_once(t3lib_extMgm::extPath('scriptmerger') .
+	'resources/minify/lib/Minify/CSS/UriRewriter.php');
+
 /**
  * This class contains the parsing and replacing functionality of css and javascript files.
  * Furthermore several wrapper methods to the project minify are available to minify, merge
