@@ -57,14 +57,26 @@ require_once(t3lib_extMgm::extPath('scriptmerger') .
  * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
 class tx_scriptmerger {
-	/* @var $tempDirectory array directories for minified, compressed and merged files */
-	private $tempDirectories = '';
+	/**
+	 * directories for minified, compressed and merged files
+	 *
+	 * @var array
+	 */
+	protected $tempDirectories = '';
 
-	/** @var $extConfig array holds the extension configuration */
-	private $extConfig = array();
+	/**
+	 * holds the extension configuration
+	 *
+	 * @var array
+	 */
+	protected $extConfig = array();
 
-	/* @var $conditionalComments array holds the conditional comments */
-	private $conditionalComments = array();
+	/**
+	 * holds the conditional comments
+	 *
+	 * @var array
+	 */
+	protected $conditionalComments = array();
 
 	/**
 	 * holds the javascript code
@@ -78,9 +90,9 @@ class tx_scriptmerger {
 	 *       |-minify-ignore => bool
 	 *       |-merge-ignore => bool
 	 *
-	 * @var $css array
+	 * @var array
 	 */
-	private $css = array();
+	protected $css = array();
 
 	/**
 	 * holds the javascript code 
@@ -92,9 +104,9 @@ class tx_scriptmerger {
 	 *   |-minify-ignore => bool
 	 *   |-merge-ignore => bool
 	 *
-	 * @var $javascript array
+	 * @var array
 	 */
-	private $javascript = array();
+	protected $javascript = array();
 
 	/**
 	 * Constructor
@@ -106,9 +118,9 @@ class tx_scriptmerger {
 		$this->tempDirectories = array (
 			'main' => PATH_site . 'typo3temp/scriptmerger/',
 			'temp' => PATH_site . 'typo3temp/scriptmerger/temp/',
-			'minified' => PATH_site . 'typo3temp/scriptmerger/minified/',
+			'minified' => PATH_site . 'typo3temp/scriptmerger/uncompressed/',
 			'compressed' => PATH_site . 'typo3temp/scriptmerger/compressed/',
-			'merged' => PATH_site . 'typo3temp/scriptmerger/merged/'
+			'merged' => PATH_site . 'typo3temp/scriptmerger/uncompressed/'
 		);
 
 		// create missing directories
@@ -306,19 +318,17 @@ class tx_scriptmerger {
 						'basename' => 'head-' . md5($mergedContent) . '.merged'
 					);
 
+					// write merged file in any case
+					$newFile = $this->tempDirectories['merged'] . $properties['basename'] . '.css';
+					if (!file_exists($newFile)) {
+						t3lib_div::writeFile($newFile, $properties['content']);
+					}
+
 					// file should be compressed
-					$newFile = '';
 					if ($this->extConfig['css.']['compress.']['enable'] === '1' &&
 						function_exists('gzcompress')
 					) {
 						$newFile = $this->compressCSSfile($properties);
-					} else {
-						$newFile = $this->tempDirectories['merged'] .
-							$properties['basename'] . '.css';
-
-						if (!file_exists($newFile)) {
-							t3lib_div::writeFile($newFile, $properties['content']);
-						}
 					}
 
 					// add new entry
@@ -399,19 +409,17 @@ class tx_scriptmerger {
 					'basename' => $section . '-' . md5($mergedContent) . '.merged'
 				);
 
+				// write merged file in any case
+				$newFile = $this->tempDirectories['merged'] . $properties['basename'] . '.js';
+				if (!file_exists($newFile)) {
+					t3lib_div::writeFile($newFile, $properties['content']);
+				}
+
 				// file should be compressed
-				$newFile = '';
 				if ($this->extConfig['javascript.']['compress.']['enable'] === '1' &&
 					function_exists('gzcompress')
 				) {
 					$newFile = $this->compressJavascriptFile($properties);
-				} else {
-					$newFile = $this->tempDirectories['merged'] .
-						$properties['basename'] . '.js';
-
-					if (!file_exists($newFile)) {
-						t3lib_div::writeFile($newFile, $properties['content']);
-					}
 				}
 
 				// add new entry
@@ -892,25 +900,15 @@ class tx_scriptmerger {
 	 * @return string new filename
 	 */
 	protected function compressCSSfile(&$properties) {
-		// get new filename
-		$newFile = $this->tempDirectories['compressed'] .
-			$properties['basename'] . '.gz.css';
-
-		// stop further processing if the file already exists
+		$newFile = $this->tempDirectories['compressed'] . $properties['basename'] . '.gz.css';
 		if (file_exists($newFile)) {
-			$properties['basename'] .= '.gz';
-			$properties['content'] = file_get_contents($newFile);
-			return $newFile;
+			return;
 		}
 
-		// compress content (FORCE_DEFLATE doesn't work!)
-		$properties['content'] = gzencode($properties['content'], 9, FORCE_GZIP);
-
-		// save content inside the new file
-		t3lib_div::writeFile($newFile, $properties['content']);
-
-		// save new part of the basename
-		$properties['basename'] .= '.gz';
+		t3lib_div::writeFile(
+			$newFile,
+			gzencode($properties['content'], 9)
+		);
 
 		return $newFile;
 	}
@@ -922,29 +920,19 @@ class tx_scriptmerger {
 	 * @return string new filename
 	 */
 	protected function compressJavascriptFile(&$properties) {
-		// get new filename
-		$newFile = $this->tempDirectories['compressed'] .
-			$properties['basename'] . '.gz.js';
-
-		// stop further processing if the file already exists
+		$newFile = $this->tempDirectories['compressed'] . $properties['basename'] . '.gz.js';
 		if (file_exists($newFile)) {
-			$properties['basename'] .= '.gz';
-			$properties['content'] = file_get_contents($newFile);
-			return $newFile;
+			return;
 		}
 
-		// compress content (FORCE_DEFLATE doesn't work!)
-		$properties['content'] = gzencode($properties['content'], 9, FORCE_GZIP);
-
-		// save content inside the new file
-		t3lib_div::writeFile($newFile, $properties['content']);
-
-		// save new part of the basename
-		$properties['basename'] .= '.gz';
+		t3lib_div::writeFile(
+			$newFile,
+			gzencode($properties['content'], 9)
+		);
 
 		return $newFile;
 	}
-	
+
 	/**
 	 * This method writes the css back to the document.
 	 *
