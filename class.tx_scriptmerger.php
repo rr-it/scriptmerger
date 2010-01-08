@@ -902,7 +902,7 @@ class tx_scriptmerger {
 	protected function compressCSSfile(&$properties) {
 		$newFile = $this->tempDirectories['compressed'] . $properties['basename'] . '.gz.css';
 		if (file_exists($newFile)) {
-			return;
+			return $newFile;
 		}
 
 		t3lib_div::writeFile(
@@ -922,7 +922,7 @@ class tx_scriptmerger {
 	protected function compressJavascriptFile(&$properties) {
 		$newFile = $this->tempDirectories['compressed'] . $properties['basename'] . '.gz.js';
 		if (file_exists($newFile)) {
-			return;
+			return $newFile;
 		}
 
 		t3lib_div::writeFile(
@@ -951,8 +951,7 @@ class tx_scriptmerger {
 
 					// normal file or http link?
 					if (file_exists($file)) {
-						$file = $GLOBALS['TSFE']->absRefPrefix .
-							str_replace(PATH_site, '', $file);
+						$file = $GLOBALS['TSFE']->absRefPrefix . str_replace(PATH_site, '', $file);
 					}
 
 					// build css script link or add the content directly into the document
