@@ -12,18 +12,18 @@
 
 $EM_CONF[$_EXTKEY] = array(
 	'title' => 'CSS/Javascript Minificator, Compressor And Merger',
-	'description' => 'You need more speed? If you can answer with question with "Sure!", then this extension is made for you! It minimizes the http requests by minifiing, compressing and merging of the css and javascript files on your site. The extension make usage of the "minify" project.',
+	'description' => 'This extension minimizes the http requests by a simple merging of your css and javascript. The result files will be minified and compressed. Anything is highly configurable. The extension make usage of the "minify" and "jsminplus" projects.',
 	'category' => 'fe',
 	'shy' => 0,
 	'version' => '3.0.6',
 	'dependencies' => '',
-	'conflicts' => 'speedy',
+	'conflicts' => 'speedy,queo_speedup,js_css_optimizer',
 	'priority' => 'bottom',
 	'loadOrder' => 'tstidy',
 	'module' => '',
 	'state' => 'stable',
 	'uploadfolder' => 0,
-	'createDirs' => '',
+	'createDirs' => 'typo3temp/scriptmerger/',
 	'modify_tables' => '',
 	'clearcacheonload' => 0,
 	'lockType' => '',
@@ -34,11 +34,13 @@ $EM_CONF[$_EXTKEY] = array(
 	'CGLcompliance_note' => '',
 	'constraints' => array(
 		'depends' => array(
-			'php' => '5.2.1-5.2.99',
+			'php' => '5.2.1-5.3.99',
 			'typo3' => '4.2.0-4.3.99',
 		),
 		'conflicts' => array(
 			'speedy' => '',
+			'queo_speedup' => '',
+			'js_css_optimizer' => ''
 		),
 		'suggests' => array(
 		),
