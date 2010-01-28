@@ -47,17 +47,16 @@ class tx_scriptmerger_cache {
 
 	/**
 	 * Initializes some class variables...
-	 * 
+	 *
 	 * @return void
 	 */
 	public function __construct() {
 		// define temporary directories
 		$this->tempDirectories = array (
-			'main' => PATH_site . 'typo3temp/scriptmerger/',
-			'temp' => PATH_site . 'typo3temp/scriptmerger/temp/',
-			'minified' => PATH_site . 'typo3temp/scriptmerger/uncompressed/',
-			'compressed' => PATH_site . 'typo3temp/scriptmerger/compressed/',
-			'merged' => PATH_site . 'typo3temp/scriptmerger/uncompressed/'
+			PATH_site . 'typo3temp/scriptmerger/' => 0,
+			PATH_site . 'typo3temp/scriptmerger/temp/' => 0,
+			PATH_site . 'typo3temp/scriptmerger/uncompressed/' => 0,
+			PATH_site . 'typo3temp/scriptmerger/compressed/' => 1209600
 		);
 	}
 
@@ -77,19 +76,27 @@ class tx_scriptmerger_cache {
 		}
 
 		// remove any files in the directories array that are older than one month
-		foreach ($this->tempDirectories as $tempDirectory) {
+		$now = time();
+		foreach ($this->tempDirectories as $tempDirectory => $maxAge) {
 			if (!is_dir($tempDirectory)) {
 				continue;
 			}
 
 			$handle = opendir($tempDirectory);
 			while (false !== ($file = readdir($handle))) {
+
 				if ($file == '.' || $file == '..') {
 					continue;
 				}
 
 				if (is_file($tempDirectory . $file)) {
-					unlink($tempDirectory . $file);
+					// get last modification time
+					$lastAccess = fileatime($tempDirectory . $file);
+					$age = $now - $lastAccess;
+
+					if ($age >= $maxAge) {
+						unlink($tempDirectory . $file);
+					}
 				}
 			}
 		}
