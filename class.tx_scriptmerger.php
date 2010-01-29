@@ -868,7 +868,7 @@ class tx_scriptmerger {
 
 		// minify content (the ending semicolon must be added to prevent minification bugs)
 		if ($this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
-			if (!class_exists(JSMinPlus)) {
+			if (!class_exists(JSMinPlus, false)) {
 				/** Minify: JSMin+ */
 				require_once(t3lib_extMgm::extPath('scriptmerger') .
 					'resources/jsminplus.php');
@@ -876,7 +876,7 @@ class tx_scriptmerger {
 
 			$properties['content'] = JSMinPlus::minify($properties['content']) . ';';
 		} else {
-			if (!class_exists(JSMin)) {
+			if (!class_exists(JSMin, false)) {
 				/** Minify: JSMin */
 				require_once(PATH_typo3 . 'contrib/jsmin/jsmin.php');
 			}
