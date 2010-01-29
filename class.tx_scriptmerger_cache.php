@@ -55,7 +55,7 @@ class tx_scriptmerger_cache {
 		$this->tempDirectories = array (
 			PATH_site . 'typo3temp/scriptmerger/' => 0,
 			PATH_site . 'typo3temp/scriptmerger/temp/' => 0,
-			PATH_site . 'typo3temp/scriptmerger/uncompressed/' => 0,
+			PATH_site . 'typo3temp/scriptmerger/uncompressed/' => 1209600,
 			PATH_site . 'typo3temp/scriptmerger/compressed/' => 1209600
 		);
 	}
