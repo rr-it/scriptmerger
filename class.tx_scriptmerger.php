@@ -126,7 +126,7 @@ class tx_scriptmerger {
 		// create missing directories
 		foreach ($this->tempDirectories as $directory) {
 			if (!is_dir($directory)) {
-				mkdir($directory);
+				t3lib_div::mkdir($directory);
 			}
 		}
 
