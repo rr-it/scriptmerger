@@ -865,7 +865,7 @@ class tx_scriptmerger {
 			$properties['content'] = file_get_contents($newFile);
 			return $newFile;
 		}
-
+		
 		// minify content (the ending semicolon must be added to prevent minification bugs)
 		if ($this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 			if (!class_exists(JSMinPlus, false)) {
@@ -874,14 +874,19 @@ class tx_scriptmerger {
 					'resources/jsminplus.php');
 			}
 
-			$properties['content'] = JSMinPlus::minify($properties['content']) . ';';
+			$minifiedContent = JSMinPlus::minify($properties['content']);
 		} else {
 			if (!class_exists(JSMin, false)) {
 				/** Minify: JSMin */
 				require_once(PATH_typo3 . 'contrib/jsmin/jsmin.php');
 			}
 
-			$properties['content'] = JSMin::minify($properties['content']) . ';';
+			$minifiedContent = JSMin::minify($properties['content']);
+		}
+
+			// @todo we should log such occurences (minification failed...)
+		if (strlen($minifiedContent) > 2) {
+			$properties['content'] = $minifiedContent . ';';
 		}
 
 		// save content inside the new file
