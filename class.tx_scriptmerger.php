@@ -857,7 +857,6 @@ class tx_scriptmerger {
 	 * of the project minify. Alternativly the old JSMin class can be used, but it's
 	 * definitly not the prefered solution!
 	 *
-	 * @todo document jsminplus option
 	 * @param array $properties properties of an entry (copy-by-reference is used!)
 	 * @return string new filename
 	 */

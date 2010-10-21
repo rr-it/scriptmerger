@@ -40,7 +40,8 @@ $EM_CONF[$_EXTKEY] = array(
 		'conflicts' => array(
 			'speedy' => '',
 			'queo_speedup' => '',
-			'js_css_optimizer' => ''
+			'js_css_optimizer' => '',
+			'minify' => ''
 		),
 		'suggests' => array(
 		),
