@@ -17,7 +17,7 @@ $EM_CONF[$_EXTKEY] = array(
 	'shy' => 0,
 	'version' => '3.0.6',
 	'dependencies' => '',
-	'conflicts' => 'speedy,queo_speedup,js_css_optimizer',
+	'conflicts' => 'speedy,queo_speedup,js_css_optimizer,minify',
 	'priority' => 'bottom',
 	'loadOrder' => 'tstidy',
 	'module' => '',
@@ -35,7 +35,7 @@ $EM_CONF[$_EXTKEY] = array(
 	'constraints' => array(
 		'depends' => array(
 			'php' => '5.2.1-5.3.99',
-			'typo3' => '4.2.0-4.3.99',
+			'typo3' => '4.2.0-4.4.99',
 		),
 		'conflicts' => array(
 			'speedy' => '',
