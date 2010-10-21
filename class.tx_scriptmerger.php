@@ -238,7 +238,6 @@ class tx_scriptmerger {
 	/**
 	 * Contains the process logic of the whole plugin!
 	 *
-	 * @todo tbd
 	 * @return void
 	 */
 	protected function main() {
@@ -251,7 +250,11 @@ class tx_scriptmerger {
 		}
 	}
 
-	// @todo tbd
+	/**
+	 * Controller for the css parsing and replacement
+	 *
+	 * @return void
+	 */
 	protected function processCSSfiles() {
 		// save the conditional comments
 		$this->getConditionalComments();
@@ -346,7 +349,11 @@ class tx_scriptmerger {
 		$this->writeConditionalCommentsToDocument();
 	}
 
-	// @todo tbd
+	/**
+	 * Controller for the processing of the javascript files.
+	 *
+	 * @return void
+	 */
 	protected function processJavascriptFiles() {
 		// fetch all javascript content
 		$this->getJavascriptFiles();
