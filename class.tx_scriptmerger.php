@@ -314,7 +314,7 @@ class tx_scriptmerger {
 				}
 
 				// save merged content inside a new file
-				if ($this->extConfig['css.']['merge.']['enable'] === '1') {
+				if ($this->extConfig['css.']['merge.']['enable'] === '1' && $mergedContent !== '') {
 					// create property array
 					$properties = array (
 						'content' => $mergedContent,
@@ -409,7 +409,7 @@ class tx_scriptmerger {
 			}
 
 			// save merged content inside a new file
-			if ($this->extConfig['javascript.']['merge.']['enable'] === '1') {
+			if ($this->extConfig['javascript.']['merge.']['enable'] === '1' && $mergedContent !== '') {
 				// create property array
 				$properties = array (
 					'content' => $mergedContent,
