@@ -26,8 +26,8 @@
 /**
  * This file contains the main processing class of the extension "scriptmerger". It
  * handles the parsing and replacing of the css and javascript files. Also it contains
- * methods for compressing, minifiing and merging of such files. The whole functionality
- * uses extensivly the functionality of the project minify.
+ * methods for compressing, minification and merging of such files. The whole functionality
+ * uses extensively the functionality of the project minify.
  *
  * @author Stefan Galinski <stefan.galinski@gmail.com>
  */
@@ -36,7 +36,7 @@
 require_once(t3lib_extMgm::extPath('scriptmerger') .
 	'resources/minify/lib/Minify/ImportProcessor.php');
 
-/** Minify: CSS Minificator */
+/** Minify: CSS Minification */
 require_once(t3lib_extMgm::extPath('scriptmerger') .
 	'resources/minify/lib/Minify/CSS.php');
 
@@ -86,7 +86,7 @@ class tx_scriptmerger {
 	 *   - $media (media attribute)
 	 *     - $file
 	 *       |-content => string
-	 *       |-basename => string (basename of $file without file prefix)
+	 *       |-basename => string (base name of $file without file prefix)
 	 *       |-minify-ignore => bool
 	 *       |-merge-ignore => bool
 	 *
@@ -100,7 +100,7 @@ class tx_scriptmerger {
 	 * Structure:
 	 * - $file
 	 *   |-content => string
-	 *   |-basename => string (basename of $file without file prefix)
+	 *   |-basename => string (base name of $file without file prefix)
 	 *   |-minify-ignore => bool
 	 *   |-merge-ignore => bool
 	 *
@@ -435,9 +435,6 @@ class tx_scriptmerger {
 					$properties['content'];
 				$this->javascript[$section][$firstFreeIndex]['basename'] =
 					$properties['basename'];
-
-				// reset merged content variable
-				$mergedContent = '';
 			}
 		}
 
@@ -562,19 +559,21 @@ class tx_scriptmerger {
 					t3lib_div::writeFile($source . '.css', $cssContent[1][0]);
 				}
 
-				// try to resolve any @import occurences
+				// try to resolve any @import occurrences
+				/** @noinspection PhpUndefinedClassInspection */
 				$content = Minify_ImportProcessor::process($source);
 				$this->css[$relation][$media][$i]['file'] = $source . '.css';
 				$this->css[$relation][$media][$i]['content'] = $cssContent[1][0];
 				$this->css[$relation][$media][$i]['basename'] = basename($source);
 			} else {
 				// try to fetch the content of the css file
-				$content = '';
 				$file = ($source{0} === '/' ? substr($source, 1) : $source);
 				$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $file);
 				if (file_exists($file)) {
+					/** @noinspection PhpUndefinedClassInspection */
 					$content = Minify_ImportProcessor::process($file);
 				} else {
+					/** @noinspection PhpUndefinedClassInspection */
 					$content = Minify_ImportProcessor::process($source);
 				}
 
@@ -609,8 +608,8 @@ class tx_scriptmerger {
 				$this->css[$relation][$media][$i]['content'] = $content;
 			}
 
-			// get basename for later usage
-			// basename without file prefix and prefixed hash of the content
+			// get base name for later usage
+			// base name without file prefix and prefixed hash of the content
 			$filename = basename($source);
 			$hash = md5($content);
 			$this->css[$relation][$media][$i]['basename'] =
@@ -750,7 +749,7 @@ class tx_scriptmerger {
 						t3lib_div::writeFile($source . '.js', $javascriptContent[1][0]);
 					}
 
-					// try to resolve any @import occurences
+					// try to resolve any @import occurrences
 					$this->javascript[$section][$i]['file'] = $source . '.js';
 					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
 					$this->javascript[$section][$i]['basename'] = basename($source);
@@ -767,7 +766,6 @@ class tx_scriptmerger {
 
 				} else {
 					// try to fetch the content of the css file
-					$content = '';
 					$file = ($source{0} === '/' ? substr($source, 1) : $source);
 					$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $file);
 					if (file_exists($file)) {
@@ -807,8 +805,8 @@ class tx_scriptmerger {
 					$this->javascript[$section][$i]['file'] = $source;
 					$this->javascript[$section][$i]['content'] = $content;
 
-					// get basename for later usage
-					// basename without file prefix and prefixed hash of the content
+					// get base name for later usage
+					// base name without file prefix and prefixed hash of the content
 					$filename = basename($source);
 					$hash = md5($content);
 					$this->javascript[$section][$i]['basename'] = substr(
@@ -841,12 +839,13 @@ class tx_scriptmerger {
 		}
 
 		// minify content
+		/** @noinspection PhpUndefinedClassInspection */
 		$properties['content'] = Minify_CSS::minify($properties['content']);
 
 		// save content inside the new file
 		t3lib_div::writeFile($newFile, $properties['content']);
 
-		// save new part of the basename
+		// save new part of the base name
 		$properties['basename'] .= '.min';
 
 		return $newFile;
@@ -854,8 +853,8 @@ class tx_scriptmerger {
 	
 	/**
 	 * This method minifies a javascript file. It's based upon the JSMin+ class
-	 * of the project minify. Alternativly the old JSMin class can be used, but it's
-	 * definitly not the prefered solution!
+	 * of the project minify. Alternatively the old JSMin class can be used, but it's
+	 * definitely not the preferred solution!
 	 *
 	 * @param array $properties properties of an entry (copy-by-reference is used!)
 	 * @return string new filename
@@ -874,23 +873,27 @@ class tx_scriptmerger {
 		
 		// minify content (the ending semicolon must be added to prevent minification bugs)
 		if ($this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
+			/** @noinspection PhpUndefinedConstantInspection */
 			if (!class_exists(JSMinPlus, false)) {
 				/** Minify: JSMin+ */
 				require_once(t3lib_extMgm::extPath('scriptmerger') .
 					'resources/jsminplus.php');
 			}
 
+			/** @noinspection PhpUndefinedClassInspection */
 			$minifiedContent = JSMinPlus::minify($properties['content']);
 		} else {
+			/** @noinspection PhpUndefinedConstantInspection */
 			if (!class_exists(JSMin, false)) {
 				/** Minify: JSMin */
 				require_once(PATH_typo3 . 'contrib/jsmin/jsmin.php');
 			}
 
+			/** @noinspection PhpUndefinedClassInspection */
 			$minifiedContent = JSMin::minify($properties['content']);
 		}
 
-			// @todo we should log such occurences (minification failed...)
+			// @todo we should log such occurrences (minification failed...)
 		if (strlen($minifiedContent) > 2) {
 			$properties['content'] = $minifiedContent . ';';
 		}
@@ -898,7 +901,7 @@ class tx_scriptmerger {
 		// save content inside the new file
 		t3lib_div::writeFile($newFile, $properties['content']);
 
-		// save new part of the basename
+		// save new part of the base name
 		$properties['basename'] .= '.min';
 
 		return $newFile;
@@ -957,7 +960,7 @@ class tx_scriptmerger {
 		foreach ($this->css as $relation => $cssByRelation) {
 			foreach ($cssByRelation as $media => $cssByMedia) {
 				ksort($cssByMedia);
-				foreach ($cssByMedia as $index => $cssProperties) {
+				foreach ($cssByMedia as $cssProperties) {
 					$file = $cssProperties['file'];
 
 					// normal file or http link?
@@ -1031,7 +1034,7 @@ class tx_scriptmerger {
 						'<script type="text/javascript" src="' . $file . '"></script>' . "\n";
 				}
 
-				// add body script backt to their original place if they were ignored
+				// add body scripts back to their original place if they were ignored
 				if ($section == 'body' && $javascriptProperties['merge-ignore']) {
 					$GLOBALS['TSFE']->content = str_replace(
 						'###MERGER' . $index . 'MERGER###',

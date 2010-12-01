@@ -66,10 +66,9 @@ class tx_scriptmerger_cache {
 	 * This method deletes all temporary files.
 	 *
 	 * @param object $params parameter array
-	 * @param object $pObj parent object
 	 * @return void
 	 */
-	public function clearCachePostProc(&$params, &$pObj) {
+	public function clearCachePostProc(&$params) {
 		// only if the cache command is available
 		if ($params['cacheCmd'] !== 'all') {
 			return;
