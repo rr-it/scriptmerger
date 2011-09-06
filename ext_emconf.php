@@ -11,8 +11,8 @@
 ########################################################################
 
 $EM_CONF[$_EXTKEY] = array(
-	'title' => 'CSS/Javascript Minificator, Compressor And Merger',
-	'description' => 'This extension minimizes the http requests by a simple merging of your css and javascript. The result files will be minified and compressed. Anything is highly configurable. The extension make usage of the "minify" and "jsminplus" projects.',
+	'title' => 'CSS/Javascript Minificator, Compressor And Concatenator',
+	'description' => 'This extension minimizes the http requests by concatenating your css and javascript. Furthermore the result can be minified and compressed. This whole process is highly configurable and is partly based on the "minify", "jsminplus" and "jsmin" projects.',
 	'category' => 'fe',
 	'shy' => 0,
 	'version' => '3.1.0',
@@ -35,7 +35,7 @@ $EM_CONF[$_EXTKEY] = array(
 	'constraints' => array(
 		'depends' => array(
 			'php' => '5.2.1-5.3.99',
-			'typo3' => '4.2.0-4.4.99',
+			'typo3' => '4.2.0-4.5.99',
 		),
 		'conflicts' => array(
 			'speedy' => '',
