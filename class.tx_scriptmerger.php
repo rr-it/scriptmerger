@@ -95,7 +95,7 @@ class tx_scriptmerger {
 	protected $css = array();
 
 	/**
-	 * holds the javascript code 
+	 * holds the javascript code
 	 *
 	 * Structure:
 	 * - $file
@@ -171,7 +171,7 @@ class tx_scriptmerger {
 
 	/**
 	 * This method fetches and prepares the extension configuration.
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function prepareExtensionConfiguration() {
@@ -465,10 +465,10 @@ class tx_scriptmerger {
 			count($this->conditionalComments[0])
 		);
 	}
-	
+
 	/**
 	 * This method writes the conditional comments back into the final output content.
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function writeConditionalCommentsToDocument() {
@@ -680,7 +680,7 @@ class tx_scriptmerger {
 		// fetch the body content
 		if ($this->extConfig['javascript.']['parseBody'] === '1') {
 			$body = array();
-			$pattern = '/<body>.+?<\/body>/is';
+			$pattern = '/<body.*>.+?<\/body>/is';
 			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
 			$body = $body[0];
 
@@ -704,7 +704,7 @@ class tx_scriptmerger {
 				);
 
 				// replace body with new one
-				$pattern = '/<body>.+?<\/body>/is';
+				$pattern = '/<body.*>.+?<\/body>/is';
 				$GLOBALS['TSFE']->content = preg_replace(
 					$pattern,
 					$body,
@@ -850,7 +850,7 @@ class tx_scriptmerger {
 
 		return $newFile;
 	}
-	
+
 	/**
 	 * This method minifies a javascript file. It's based upon the JSMin+ class
 	 * of the project minify. Alternatively the old JSMin class can be used, but it's
@@ -870,7 +870,7 @@ class tx_scriptmerger {
 			$properties['content'] = file_get_contents($newFile);
 			return $newFile;
 		}
-		
+
 		// minify content (the ending semicolon must be added to prevent minification bugs)
 		if ($this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 			/** @noinspection PhpUndefinedConstantInspection */
@@ -926,7 +926,7 @@ class tx_scriptmerger {
 
 		return $newFile;
 	}
-	
+
 	/**
 	 * This method compresses a javascript file.
 	 *
