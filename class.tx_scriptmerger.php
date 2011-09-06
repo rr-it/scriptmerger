@@ -472,7 +472,7 @@ class tx_scriptmerger {
 	protected function writeConditionalCommentsToDocument() {
 		// write conditional comments into the output content
 		$pattern = '/<\/head>/is';
-		$replace = implode("\n", $this->conditionalComments[0]) . "\n" . '\0';
+		$replace = "\t" . implode("\n\t", array_map('trim', $this->conditionalComments[0])) . "\n" . '\0';
 		$GLOBALS['TSFE']->content =
 			preg_replace($pattern, $replace, $GLOBALS['TSFE']->content);
 	}
@@ -496,14 +496,14 @@ class tx_scriptmerger {
 		// parse all available css code inside link and style tags
 		$cssTags = array();
 		$pattern = '/' .
-			'<(link|style)' .						// This expression includes any link or style nodes
-				'(?=.+?(?:type="(text\/css)"|>))' .	// which have the type text/css.
-				'(?=.+?(?:media="(.*?)"|>))' .		// It fetches the media attribute
+			'<(link|sty)' .							// Parse any link and style tags.
+				'(?=.+?(?:media="(.*?)"|>))' .		// Fetch the media attribute
 				'(?=.+?(?:href="(.*?)"|>))' .		// and the href attribute
-				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute of the node.
-			'[^>]+?\2[^>]+?' .						// Finally we finish the parsing of the opening tag
-			'(?:\/>|<\/style>)\s*' .				// until the possible closing tag.
+				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute of the tag.
+			'(?:[^>]+?\.css[^>]+?\/?>' .			// Continue parsing from \1 to the closing tag.
+				'|le[^>]*?>[^>]+?<\/style>)\s*' .
 			'/is';
+
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $cssTags);
 		if (!count($cssTags[0])) {
 			return;
@@ -513,21 +513,22 @@ class tx_scriptmerger {
 		$GLOBALS['TSFE']->content = preg_replace(
 			$pattern,
 			'',
-			$GLOBALS['TSFE']->content, count($cssTags[0])
+			$GLOBALS['TSFE']->content,
+			count($cssTags[0])
 		);
 
 		// parse matches
 		$amountOfResults = count($cssTags[0]);
 		for ($i = 0; $i < $amountOfResults; ++$i) {
 			// get media attribute (all as default if it's empty)
-			$media = ($cssTags[3][$i] === '') ? 'all' : $cssTags[3][$i];
+			$media = ($cssTags[2][$i] === '') ? 'all' : $cssTags[2][$i];
 			$media = implode(',', array_map('trim', explode(',', $media)));
 
 			// get rel attribute (stylesheet as default if it's empty)
-			$relation = ($cssTags[5][$i] === '') ? 'stylesheet' : $cssTags[5][$i];
+			$relation = ($cssTags[4][$i] === '') ? 'stylesheet' : $cssTags[4][$i];
 
 			// get source attribute
-			$source = $cssTags[4][$i];
+			$source = $cssTags[3][$i];
 
 			// add basic entry
 			$this->css[$relation][$media][$i]['minify-ignore'] = false;
@@ -539,6 +540,7 @@ class tx_scriptmerger {
 
 			// styles which are added inside the document must be parsed again
 			// to fetch the pure css code
+			$cssTags[1][$i] = ($cssTags[1][$i] === 'sty' ? 'style' : $cssTags[1][$i]);
 			if ($cssTags[1][$i] === 'style') {
 				$cssContent = array();
 				preg_match_all($filterInDocumentPattern, $cssTags[0][$i], $cssContent);
@@ -630,11 +632,10 @@ class tx_scriptmerger {
 
 		// create search pattern
 		$searchScriptsPattern = '/' .
-			'<script' .										// This expression includes any script nodes
-				'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
-				'(?=.+?(?:src="(.*?)"|>))' .				// It fetches the src attribute.
-			'.+?\1.+?' .									// Finally we finish the parsing of the opening tag
-			'<\/script>\s*' .								// until the possible closing tag.
+			'<script' .							// This expression includes any script nodes.
+				'(?=.+?(?:src="(.*?)"|>))' .	// It fetches the src attribute.
+			'[^>]*?>' .							// Finally we finish the parsing of the opening tag
+			'.*?<\/script>\s*' .				// until the closing tag.
 			'/is';
 
 		// filter pattern for the inDoc scripts (fetches the content)
@@ -642,7 +643,7 @@ class tx_scriptmerger {
 			'<script.*?>' .					// The expression removes the opening script tag
 			'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
 			'(?:.*?<!--)?' .				// senseless <!-- construct
-			'\s*(.*?)' .					// We save the pure css content,
+			'\s*(.*?)' .					// We save the pure js content,
 			'(?:\s*\/\/\s*-->)?' .			// senseless <!-- construct
 			'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
 			'\s*<\/script>' .				// and closing script tag
@@ -654,10 +655,10 @@ class tx_scriptmerger {
 		preg_match($pattern, $GLOBALS['TSFE']->content, $head);
 		$head = $head[0];
 
-		// parse all available css code inside script tags
+		// parse all available js code inside script tags
 		preg_match_all($searchScriptsPattern, $head, $javascriptTags['head']);
 
-		// remove any css code inside the output content
+		// remove any js code inside the output content
 		if (count($javascriptTags['head'][0])) {
 			$head = preg_replace(
 				$searchScriptsPattern,
@@ -682,10 +683,10 @@ class tx_scriptmerger {
 			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
 			$body = $body[0];
 
-			// parse all available css code inside script tags
+			// parse all available js code inside script tags
 			preg_match_all($searchScriptsPattern, $body, $javascriptTags['body']);
 
-			// remove any css code inside the output content
+			// remove any js code inside the output content
 			// we leave markers in the form ###100### at the original places to write them
 			// back here; it's started by 100
 			if (count($javascriptTags['body'][0])) {
@@ -716,7 +717,7 @@ class tx_scriptmerger {
 			$amountOfResults = count($results[0]);
 			for ($i = 0; $i < $amountOfResults; ++$i) {
 				// get source attribute
-				$source = $results[2][$i];
+				$source = trim($results[1][$i]);
 
 				// add basic entry
 				$this->javascript[$section][$i]['minify-ignore'] = false;
