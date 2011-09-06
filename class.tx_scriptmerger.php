@@ -1,27 +1,27 @@
 <?php
 
 /***************************************************************
-*  Copyright notice
-*
-*  (c) 2010 Stefan Galinski <stefan.galinski@gmail.com>
-*  All rights reserved
-*
-*  This script is part of the TYPO3 project. The TYPO3 project is
-*  free software; you can redistribute it and/or modify
-*  it under the terms of the GNU General Public License as published by
-*  the Free Software Foundation; either version 2 of the License, or
-*  (at your option) any later version.
-*
-*  The GNU General Public License can be found at
-*  http://www.gnu.org/copyleft/gpl.html.
-*
-*  This script is distributed in the hope that it will be useful,
-*  but WITHOUT ANY WARRANTY; without even the implied warranty of
-*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-*  GNU General Public License for more details.
-*
-*  This copyright notice MUST APPEAR in all copies of the script!
-***************************************************************/
+ *  Copyright notice
+ *
+ *  (c) 2010 Stefan Galinski <stefan.galinski@gmail.com>
+ *  All rights reserved
+ *
+ *  This script is part of the TYPO3 project. The TYPO3 project is
+ *  free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  The GNU General Public License can be found at
+ *  http://www.gnu.org/copyleft/gpl.html.
+ *
+ *  This script is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  This copyright notice MUST APPEAR in all copies of the script!
+ ***************************************************************/
 
 /**
  * This file contains the main processing class of the extension "scriptmerger". It
@@ -84,11 +84,11 @@ class tx_scriptmerger {
 	 * Structure:
 	 * - $relation (rel attribute)
 	 *   - $media (media attribute)
-	 *     - $file
-	 *       |-content => string
-	 *       |-basename => string (base name of $file without file prefix)
-	 *       |-minify-ignore => bool
-	 *       |-merge-ignore => bool
+	 *	 - $file
+	 *	   |-content => string
+	 *	   |-basename => string (base name of $file without file prefix)
+	 *	   |-minify-ignore => bool
+	 *	   |-merge-ignore => bool
 	 *
 	 * @var array
 	 */
@@ -110,12 +110,10 @@ class tx_scriptmerger {
 
 	/**
 	 * Constructor
-	 *
-	 * @return void
 	 */
 	public function __construct() {
 		// define temporary directories
-		$this->tempDirectories = array (
+		$this->tempDirectories = array(
 			'main' => PATH_site . 'typo3temp/scriptmerger/',
 			'temp' => PATH_site . 'typo3temp/scriptmerger/temp/',
 			'minified' => PATH_site . 'typo3temp/scriptmerger/uncompressed/',
@@ -316,7 +314,7 @@ class tx_scriptmerger {
 				// save merged content inside a new file
 				if ($this->extConfig['css.']['merge.']['enable'] === '1' && $mergedContent !== '') {
 					// create property array
-					$properties = array (
+					$properties = array(
 						'content' => $mergedContent,
 						'basename' => 'head-' . md5($mergedContent) . '.merged'
 					);
@@ -411,7 +409,7 @@ class tx_scriptmerger {
 			// save merged content inside a new file
 			if ($this->extConfig['javascript.']['merge.']['enable'] === '1' && $mergedContent !== '') {
 				// create property array
-				$properties = array (
+				$properties = array(
 					'content' => $mergedContent,
 					'basename' => $section . '-' . md5($mergedContent) . '.merged'
 				);
@@ -498,13 +496,13 @@ class tx_scriptmerger {
 		// parse all available css code inside link and style tags
 		$cssTags = array();
 		$pattern = '/' .
-			'<(link|style)' .	// This expression includes any link or style nodes
+			'<(link|style)' .						// This expression includes any link or style nodes
 				'(?=.+?(?:type="(text\/css)"|>))' .	// which have the type text/css.
 				'(?=.+?(?:media="(.*?)"|>))' .		// It fetches the media attribute
 				'(?=.+?(?:href="(.*?)"|>))' .		// and the href attribute
 				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute of the node.
-			'[^>]+?\2[^>]+?' .				// Finally we finish the parsing of the opening tag
-			'(?:\/>|<\/style>)\s*' .	// until the possible closing tag.
+			'[^>]+?\2[^>]+?' .						// Finally we finish the parsing of the opening tag
+			'(?:\/>|<\/style>)\s*' .				// until the possible closing tag.
 			'/is';
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $cssTags);
 		if (!count($cssTags[0])) {
@@ -632,15 +630,15 @@ class tx_scriptmerger {
 
 		// create search pattern
 		$searchScriptsPattern = '/' .
-			'<script' .			// This expression includes any script nodes
+			'<script' .										// This expression includes any script nodes
 				'(?=.+?(?:type="(text\/javascript)"|>))' .	// which has the type text/javascript.
 				'(?=.+?(?:src="(.*?)"|>))' .				// It fetches the src attribute.
-			'.+?\1.+?' .		// Finally we finish the parsing of the opening tag
-			'<\/script>\s*' .	// until the possible closing tag.
+			'.+?\1.+?' .									// Finally we finish the parsing of the opening tag
+			'<\/script>\s*' .								// until the possible closing tag.
 			'/is';
 
 		// filter pattern for the inDoc scripts (fetches the content)
-		$filterInDocumentPattern =  '/' .
+		$filterInDocumentPattern = '/' .
 			'<script.*?>' .					// The expression removes the opening script tag
 			'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
 			'(?:.*?<!--)?' .				// senseless <!-- construct
@@ -786,19 +784,19 @@ class tx_scriptmerger {
 					if ($this->extConfig['javascript.']['minify.']['ignore'] !== '' &&
 						preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)
 					) {
-							$this->javascript[$section][$i]['minify-ignore'] = true;
+						$this->javascript[$section][$i]['minify-ignore'] = true;
 					}
 
 					if ($this->extConfig['javascript.']['compress.']['ignore'] !== '' &&
 						preg_match($this->extConfig['javascript.']['compress.']['ignore'], $source)
 					) {
-							$this->javascript[$section][$i]['compress-ignore'] = true;
+						$this->javascript[$section][$i]['compress-ignore'] = true;
 					}
 
 					if ($this->extConfig['javascript.']['merge.']['ignore'] !== '' &&
 						preg_match($this->extConfig['javascript.']['merge.']['ignore'], $source)
 					) {
-							$this->javascript[$section][$i]['merge-ignore'] = true;
+						$this->javascript[$section][$i]['merge-ignore'] = true;
 					}
 
 					// set the javascript file with it's content
@@ -893,7 +891,7 @@ class tx_scriptmerger {
 			$minifiedContent = JSMin::minify($properties['content']);
 		}
 
-			// @todo we should log such occurrences (minification failed...)
+		// @todo we should log such occurrences (minification failed...)
 		if (strlen($minifiedContent) > 2) {
 			$properties['content'] = $minifiedContent . ';';
 		}
@@ -1061,7 +1059,7 @@ class tx_scriptmerger {
 	}
 }
 
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php'])	{
+if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']) {
 	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']);
 }
 

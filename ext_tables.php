@@ -1,9 +1,10 @@
 <?php
+
 if (!defined('TYPO3_MODE')) {
-	die ('Access denied.');
+	die('Access denied.');
 }
 
-// initialize static extension templates
+/** @noinspection PhpUndefinedVariableInspection */
 t3lib_extMgm::addStaticFile($_EXTKEY, 'configuration/', 'Scriptmerger');
 
 ?>
