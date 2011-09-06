@@ -577,6 +577,13 @@ class tx_scriptmerger {
 					$content = Minify_ImportProcessor::process($source);
 				}
 
+				$file = ($source{0} === '/' ? substr($source, 1) : $source);
+				if (strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
+					$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
+				}
+				$file = (file_exists(PATH_site . $file) ? PATH_site . $file : $source);
+				$content = Minify_ImportProcessor::process($file);
+				
 				// ignore this file if the content could not be fetched
 				if ($content == '') {
 					$this->css[$relation][$media][$i]['minify-ignore'] = true;
@@ -766,12 +773,11 @@ class tx_scriptmerger {
 				} else {
 					// try to fetch the content of the css file
 					$file = ($source{0} === '/' ? substr($source, 1) : $source);
-					$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $file);
-					if (file_exists($file)) {
-						$content = file_get_contents($file);
-					} else {
-						$content = t3lib_div::getURL($source);
+					if (strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
+						$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 					}
+					$file = PATH_site . $file;
+					$content = (file_exists($file) ? file_get_contents($file) : t3lib_div::getURL($source));
 
 					// ignore this file if the content could not be fetched
 					if ($content == '') {
