@@ -239,12 +239,18 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function main() {
-		if ($this->extConfig['css.']['enable'] === '1') {
-			$this->processCSSfiles();
-		}
+		if ($this->extConfig['css.']['enable'] === '1' || $this->extConfig['javascript.']['enable'] === '1') {
+			$this->getConditionalComments();
 
-		if ($this->extConfig['javascript.']['enable'] === '1') {
-			$this->processJavascriptFiles();
+			if ($this->extConfig['javascript.']['enable'] === '1') {
+				$this->processJavascriptFiles();
+			}
+
+			if ($this->extConfig['css.']['enable'] === '1') {
+				$this->processCSSfiles();
+			}
+
+			$this->writeConditionalCommentsToDocument();
 		}
 	}
 
@@ -254,9 +260,6 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function processCSSfiles() {
-		// save the conditional comments
-		$this->getConditionalComments();
-
 		// fetch all remaining css contents
 		$this->getCSSfiles();
 
@@ -344,7 +347,6 @@ class tx_scriptmerger {
 
 		// write the conditional comments and possibly merged css files back to the document
 		$this->writeCSStoDocument();
-		$this->writeConditionalCommentsToDocument();
 	}
 
 	/**
@@ -441,6 +443,33 @@ class tx_scriptmerger {
 	}
 
 	/**
+	 * Callback function to replace conditional comments with placeholders
+	 *
+	 * @param array $hits
+	 * @return string
+	 */
+	protected function conditionalCommentsSave($hits) {
+		$this->conditionalComments[] = $hits[0];
+		return '###conditionalComment' . (count($this->conditionalComments) - 1) . '###';
+	}
+
+	/**
+	 * Callback function to restore placeholders for conditional comments
+	 *
+	 * @param array $hits
+	 * @return string
+	 */
+	protected function conditionalCommentsRestore($hits) {
+		$results = array();
+		preg_match('/\d+/is', $hits[0], $results);
+		$result = '';
+		if (count($results) > 0) {
+			$result = $this->conditionalComments[$results[0]];
+		}
+		return $result;
+	}
+
+	/**
 	 * This method parses the output content and saves any found conditional comments
 	 * into the "conditionalComments" class property. The output content is cleaned
 	 * up of the found results.
@@ -448,19 +477,11 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function getConditionalComments() {
-		// parse the conditional comments
-		$pattern = '/<!--\[if.+?<!\[endif\]-->\s*/is';
-		preg_match_all($pattern, $GLOBALS['TSFE']->content, $this->conditionalComments);
-		if (!$this->conditionalComments[0]) {
-			return;
-		}
-
-		// remove the conditional comments from the output content
-		$GLOBALS['TSFE']->content = preg_replace(
+		$pattern = '/<!--\[if.+?<!\[endif\]-->/is';
+		$GLOBALS['TSFE']->content = preg_replace_callback(
 			$pattern,
-			'',
-			$GLOBALS['TSFE']->content,
-			count($this->conditionalComments[0])
+			array($this, 'conditionalCommentsSave'),
+			$GLOBALS['TSFE']->content
 		);
 	}
 
@@ -470,11 +491,12 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function writeConditionalCommentsToDocument() {
-		// write conditional comments into the output content
-		$pattern = '/<\/head>/is';
-		$replace = "\t" . implode("\n\t", array_map('trim', $this->conditionalComments[0])) . "\n" . '\0';
-		$GLOBALS['TSFE']->content =
-			preg_replace($pattern, $replace, $GLOBALS['TSFE']->content);
+		$pattern = '/###conditionalComment\d+###/is';
+		$GLOBALS['TSFE']->content = preg_replace_callback(
+			$pattern,
+			array($this, 'conditionalCommentsRestore'),
+			$GLOBALS['TSFE']->content
+		);
 	}
 
 	/**
@@ -958,9 +980,6 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function writeCSStoDocument() {
-		// prepare pattern
-		$pattern = '/<\/head>/is';
-
 		// write all files back to the document
 		foreach ($this->css as $relation => $cssByRelation) {
 			foreach ($cssByRelation as $media => $cssByMedia) {
@@ -975,21 +994,21 @@ class tx_scriptmerger {
 
 					// build css script link or add the content directly into the document
 					if ($this->extConfig['css.']['addContentInDocument'] === '1') {
-						$content = "\t" .
+						$content = "\n\t" .
 							'<style media="' . $media . '" type="text/css">' . "\n" .
 							"\t" . '/* <![CDATA[ */' . "\n" .
 							"\t" . $cssProperties['content'] . "\n" .
 							"\t" . '/* ]]> */' . "\n" .
 							"\t" . '</style>' . "\n";
 					} else {
-						$content = "\t" . '<link rel="' . $relation . '" type="text/css" ' .
+						$content = "\n\t" . '<link rel="' . $relation . '" type="text/css" ' .
 							'media="' . $media . '" href="' . $file . '" />' . "\n";
 					}
 
 					// add content right before the closing head tag
 					$GLOBALS['TSFE']->content = preg_replace(
-						$pattern,
-						$content . '\0',
+						'/<head.*?>/is',
+						'\0' . $content,
 						$GLOBALS['TSFE']->content
 					);
 				}
@@ -1010,9 +1029,10 @@ class tx_scriptmerger {
 			}
 
 			// prepare pattern
-			$pattern = '/<\/' . $section . '>/is';
 			if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
-				$pattern = '/<\/body>/is';
+				$pattern = '/<\/body>/i';
+			} else {
+				$pattern = '/<head.*?>/is';
 			}
 
 			ksort($javascriptBySection);
@@ -1052,7 +1072,7 @@ class tx_scriptmerger {
 				// add content right before the closing head tag
 				$GLOBALS['TSFE']->content = preg_replace(
 					$pattern,
-					$content . '\0',
+					($section === 'body' ? $content . '\0' : '\0' . $content),
 					$GLOBALS['TSFE']->content
 				);
 			}
