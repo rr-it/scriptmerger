@@ -1012,7 +1012,8 @@ class tx_scriptmerger {
 
 					// normal file or http link?
 					if (file_exists($file)) {
-						$file = $GLOBALS['TSFE']->absRefPrefix . str_replace(PATH_site, '', $file);
+						$file = $GLOBALS['TSFE']->absRefPrefix .
+							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
 					}
 
 					// build css script link or add the content directly into the document
@@ -1064,7 +1065,8 @@ class tx_scriptmerger {
 
 				// normal file or http link?
 				if (file_exists($file)) {
-					$file = $GLOBALS['TSFE']->absRefPrefix . str_replace(PATH_site, '', $file);
+					$file = $GLOBALS['TSFE']->absRefPrefix .
+						(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
 				}
 
 				// build javascript script link or add the content directly into the document
