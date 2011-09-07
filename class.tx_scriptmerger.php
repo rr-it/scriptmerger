@@ -592,16 +592,16 @@ class tx_scriptmerger {
 				// save the content into a temporary file
 				$hash = md5($cssContent[1][0]);
 				$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
-
+				$tempFile = $source . '.css';
 				if (!file_exists($source . '.css')) {
-					t3lib_div::writeFile($source . '.css', $cssContent[1][0]);
+					t3lib_div::writeFile($tempFile, $cssContent[1][0]);
 				}
 
 				// try to resolve any @import occurrences
 				/** @noinspection PhpUndefinedClassInspection */
-				$content = Minify_ImportProcessor::process($source);
-				$this->css[$relation][$media][$i]['file'] = $source . '.css';
-				$this->css[$relation][$media][$i]['content'] = $cssContent[1][0];
+				$content = Minify_ImportProcessor::process($tempFile);
+				$this->css[$relation][$media][$i]['file'] = $tempFile;
+				$this->css[$relation][$media][$i]['content'] = $content;
 				$this->css[$relation][$media][$i]['basename'] = basename($source);
 			} else {
 				// try to fetch the content of the css file
@@ -612,8 +612,8 @@ class tx_scriptmerger {
 				if (file_exists(PATH_site . $file)) {
 					$content = Minify_ImportProcessor::process(PATH_site . $file);
 				} else {
-					$sourceContent = $this->getExternalFile($source);
-					$content = Minify_ImportProcessor::process($sourceContent);
+					$tempFile = $this->getExternalFile($source);
+					$content = Minify_ImportProcessor::process($tempFile);
 				}
 
 				// ignore this file if the content could not be fetched
@@ -860,7 +860,7 @@ class tx_scriptmerger {
 	 * Gets a file from an external resource (e.g. http://) and caches them
 	 *
 	 * @param string $source Source address
-	 * @return string file contents
+	 * @return string cache file
 	 */
 	protected function getExternalFile($source) {
 		$filename = basename($source);
@@ -870,16 +870,16 @@ class tx_scriptmerger {
 		$cacheLifetime = ($externalFileCacheLifetime > 0) ? $externalFileCacheLifetime : 3600;
 
 			// check the age of the cache file (also fails with non-existent file)
-		if ((int) filemtime($cacheFile) > ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
-			$content = file_get_contents($cacheFile);
-		} else {
+		if ((int) filemtime($cacheFile) <= ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
 			$content = t3lib_div::getURL($source);
 			if ($content !== FALSE) {
 				t3lib_div::writeFile($cacheFile, $content);
+			} else {
+				$cacheFile = '';
 			}
 		}
 
-		return $content;
+		return $cacheFile;
 	}
 
 	/**
