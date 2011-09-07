@@ -521,7 +521,8 @@ class tx_scriptmerger {
 			'<(link|sty)' .							// Parse any link and style tags.
 				'(?=.+?(?:media="(.*?)"|>))' .		// Fetch the media attribute
 				'(?=.+?(?:href="(.*?)"|>))' .		// and the href attribute
-				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute of the tag.
+				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute
+				'(?=.+?(?:title="(.*?)"|>))' .		// and the title attribute of the tag.
 			'(?:[^>]+?\.css[^>]+?\/?>' .			// Continue parsing from \1 to the closing tag.
 				'|le[^>]*?>[^>]+?<\/style>)\s*' .
 			'/is';
@@ -543,15 +544,18 @@ class tx_scriptmerger {
 		$amountOfResults = count($cssTags[0]);
 		for ($i = 0; $i < $amountOfResults; ++$i) {
 			// get media attribute (all as default if it's empty)
-			$media = ($cssTags[2][$i] === '') ? 'all' : $cssTags[2][$i];
+			$media = (trim($cssTags[2][$i]) === '') ? 'all' : $cssTags[2][$i];
 			$media = implode(',', array_map('trim', explode(',', $media)));
 
 			// get rel attribute (stylesheet as default if it's empty)
-			$relation = ($cssTags[4][$i] === '') ? 'stylesheet' : $cssTags[4][$i];
+			$relation = (trim($cssTags[4][$i]) === '') ? 'stylesheet' : $cssTags[4][$i];
 
 			// get source attribute
 			$source = $cssTags[3][$i];
 
+			// get title attribute
+			$title = trim($cssTags[5][$i]);
+			
 			// add basic entry
 			$this->css[$relation][$media][$i]['minify-ignore'] = false;
 			$this->css[$relation][$media][$i]['compress-ignore'] = false;
@@ -559,6 +563,7 @@ class tx_scriptmerger {
 			$this->css[$relation][$media][$i]['file'] = $source;
 			$this->css[$relation][$media][$i]['content'] = '';
 			$this->css[$relation][$media][$i]['basename'] = '';
+			$this->css[$relation][$media][$i]['title'] = $title;
 
 			// styles which are added inside the document must be parsed again
 			// to fetch the pure css code
@@ -1025,8 +1030,10 @@ class tx_scriptmerger {
 							"\t" . '/* ]]> */' . "\n" .
 							"\t" . '</style>' . "\n";
 					} else {
+						$title = (trim($cssProperties['title']) !== '' ?
+							'title="' . $cssProperties['title']  . '"' : '');
 						$content = "\n\t" . '<link rel="' . $relation . '" type="text/css" ' .
-							'media="' . $media . '" href="' . $file . '" />' . "\n";
+							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . "\n";
 					}
 
 					// add content right before the closing head tag
