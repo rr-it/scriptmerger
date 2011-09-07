@@ -21,6 +21,12 @@ plugin.tx_scriptmerger {
 			enable = {$plugin.tx_scriptmerger.css.merge.enable}
 			ignore = {$plugin.tx_scriptmerger.css.merge.ignore}
 		}
+		
+		# charset
+		uniqueCharset {
+			enable = {$plugin.tx_scriptmerger.css.uniqueCharset.enable}
+			value = {$plugin.tx_scriptmerger.css.uniqueCharset.value}
+		}
 	}
 
 	# minification, compressing and merging of javascript files

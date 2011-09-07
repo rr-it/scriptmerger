@@ -307,6 +307,10 @@ class tx_scriptmerger {
 
 				// save merged content inside a new file
 				if ($this->extConfig['css.']['merge.']['enable'] === '1' && $mergedContent !== '') {
+					if ($this->extConfig['css.']['uniqueCharset.']['enable'] === '1') {
+						$mergedContent = $this->uniqueCharset($mergedContent);
+					}
+
 					// create property array
 					$properties = array(
 						'content' => $mergedContent,
@@ -338,6 +342,22 @@ class tx_scriptmerger {
 
 		// write the conditional comments and possibly merged css files back to the document
 		$this->writeCSStoDocument();
+	}
+
+	/**
+	 * Some browser fail on parsing merged CSS files if multiple charset definitions are found.
+	 * Therefor we replace all charset definition's with an empty string and add a single charset
+	 * definition to the beginning of the content. At least Webkit engines fail badly.
+	 *
+	 * @param string $content
+	 * @return string
+	 */
+	protected function uniqueCharset($content){
+		if (!empty($this->extConfig['css.']['uniqueCharset.']['value'])) {
+			$content = preg_replace('/@charset[^;]+;/', '', $content);
+			$content = $this->extConfig['css.']['uniqueCharset.']['value'] . $content;
+		}
+		return $content;
 	}
 
 	/**

@@ -20,6 +20,12 @@ plugin.tx_scriptmerger {
 			enable = 1
 			ignore =
 		}
+		
+		# charset
+		uniqueCharset {
+			enable = 1
+			value = @charset "UTF-8";
+		}
 	}
 
 	javascript {
