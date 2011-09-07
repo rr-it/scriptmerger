@@ -940,9 +940,12 @@ class tx_scriptmerger {
 			$minifiedContent = JSMin::minify($properties['content']);
 		}
 
-		// @todo we should log such occurrences (minification failed...)
-		if (strlen($minifiedContent) > 2) {
+		if (strlen($minifiedContent) > 2 || count(explode("\n", $minifiedContent)) > 50) {
 			$properties['content'] = $minifiedContent . ';';
+		} else {
+			$message = 'This javascript file could not be minified: "' . $properties['file'] . '"! ' .
+				'You should exclude it from the minification process!';
+			t3lib_div::sysLog($message, 'scriptmerger', 3);
 		}
 
 		// save content inside the new file
