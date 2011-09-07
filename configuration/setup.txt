@@ -50,4 +50,5 @@ plugin.tx_scriptmerger {
 			ignore = {$plugin.tx_scriptmerger.javascript.merge.ignore}
 		}
 	}
+	externalFileCacheLifetime = {$plugin.tx_scriptmerger.externalFileCacheLifetime}
 }

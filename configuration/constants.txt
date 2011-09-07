@@ -48,4 +48,5 @@ plugin.tx_scriptmerger {
 			ignore = \?
 		}
 	}
+	externalFileCacheLifetime = 3600
 }

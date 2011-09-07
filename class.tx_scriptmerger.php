@@ -590,22 +590,16 @@ class tx_scriptmerger {
 			} else {
 				// try to fetch the content of the css file
 				$file = ($source{0} === '/' ? substr($source, 1) : $source);
-				$file = PATH_site . str_replace($GLOBALS['TSFE']->absRefPrefix, '', $file);
-				if (file_exists($file)) {
-					/** @noinspection PhpUndefinedClassInspection */
-					$content = Minify_ImportProcessor::process($file);
-				} else {
-					/** @noinspection PhpUndefinedClassInspection */
-					$content = Minify_ImportProcessor::process($source);
-				}
-
-				$file = ($source{0} === '/' ? substr($source, 1) : $source);
 				if (strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
 					$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 				}
-				$file = (file_exists(PATH_site . $file) ? PATH_site . $file : $source);
-				$content = Minify_ImportProcessor::process($file);
-				
+				if (file_exists(PATH_site . $file)) {
+					$content = Minify_ImportProcessor::process(PATH_site . $file);
+				} else {
+					$sourceContent = $this->getExternalFile($source);
+					$content = Minify_ImportProcessor::process($sourceContent);
+				}
+
 				// ignore this file if the content could not be fetched
 				if ($content == '') {
 					$this->css[$relation][$media][$i]['minify-ignore'] = true;
@@ -799,7 +793,7 @@ class tx_scriptmerger {
 						$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 					}
 					$file = PATH_site . $file;
-					$content = (file_exists($file) ? file_get_contents($file) : t3lib_div::getURL($source));
+					$content = (file_exists($file) ? file_get_contents($file) : $this->getExternalFile($source));
 
 					// ignore this file if the content could not be fetched
 					if ($content == '') {
@@ -844,6 +838,32 @@ class tx_scriptmerger {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Gets a file from an external resource (e.g. http://) and caches them
+	 *
+	 * @param string $source Source address
+	 * @return string file contents
+	 */
+	protected function getExternalFile($source) {
+		$filename = basename($source);
+		$hash = md5($source);
+		$cacheFile = $this->tempDirectories['temp'] . $filename . '-' . $hash;
+		$externalFileCacheLifetime = intval($this->extConfig['externalFileCacheLifetime']);
+		$cacheLifetime = ($externalFileCacheLifetime > 0) ? $externalFileCacheLifetime : 3600;
+
+			// check the age of the cache file (also fails with non-existent file)
+		if ((int) filemtime($cacheFile) > ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
+			$content = file_get_contents($cacheFile);
+		} else {
+			$content = t3lib_div::getURL($source);
+			if ($content !== FALSE) {
+				t3lib_div::writeFile($cacheFile, $content);
+			}
+		}
+
+		return $content;
 	}
 
 	/**
