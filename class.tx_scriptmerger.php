@@ -1047,11 +1047,12 @@ class tx_scriptmerger {
 							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . "\n";
 					}
 
-					// add content right before the closing head tag
+					// add content right after the opening head tag
 					$GLOBALS['TSFE']->content = preg_replace(
-						'/<head.*?>/is',
+						'/<(?:base|meta name="generator"|link|title|\/head).*?>/is',
 						'\0' . $content,
-						$GLOBALS['TSFE']->content
+						$GLOBALS['TSFE']->content,
+						1
 					);
 				}
 			}
@@ -1074,7 +1075,7 @@ class tx_scriptmerger {
 			if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
 				$pattern = '/<\/body>/i';
 			} else {
-				$pattern = '/<head.*?>/is';
+				$pattern = '/<(?:base|meta name="generator"|link|title|\/head).*?>/is';
 			}
 
 			ksort($javascriptBySection);
@@ -1112,11 +1113,12 @@ class tx_scriptmerger {
 					continue;
 				}
 
-				// add content right before the closing head tag
+				// add content right after the opening head tag or inside the body
 				$GLOBALS['TSFE']->content = preg_replace(
 					$pattern,
 					($section === 'body' ? $content . '\0' : '\0' . $content),
-					$GLOBALS['TSFE']->content
+					$GLOBALS['TSFE']->content,
+					1
 				);
 			}
 		}
