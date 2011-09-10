@@ -1020,8 +1020,8 @@ class tx_scriptmerger {
 	protected function writeCSStoDocument() {
 		// write all files back to the document
 		foreach ($this->css as $relation => $cssByRelation) {
+			$cssByRelation = array_reverse($cssByRelation);
 			foreach ($cssByRelation as $media => $cssByMedia) {
-				ksort($cssByMedia);
 				foreach ($cssByMedia as $cssProperties) {
 					$file = $cssProperties['file'];
 
