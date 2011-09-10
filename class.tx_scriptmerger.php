@@ -554,6 +554,8 @@ class tx_scriptmerger {
 		// parse matches
 		$amountOfResults = count($cssTags[0]);
 		for ($i = 0; $i < $amountOfResults; ++$i) {
+			$content = '';
+
 			// get media attribute (all as default if it's empty)
 			$media = (trim($cssTags[2][$i]) === '') ? 'all' : $cssTags[2][$i];
 			$media = implode(',', array_map('trim', explode(',', $media)));
@@ -603,7 +605,7 @@ class tx_scriptmerger {
 				$this->css[$relation][$media][$i]['file'] = $tempFile;
 				$this->css[$relation][$media][$i]['content'] = $content;
 				$this->css[$relation][$media][$i]['basename'] = basename($source);
-			} else {
+			} elseif ($source !== '') {
 				// try to fetch the content of the css file
 				$file = ($source{0} === '/' ? substr($source, 1) : $source);
 				if (strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
@@ -793,16 +795,13 @@ class tx_scriptmerger {
 					$this->javascript[$section][$i]['basename'] = basename($source);
 
 					// inDocument styles of the body shouldn't be removed from their position
-					if ($this->extConfig['javascript.']['doNotRemoveInDocInBody'] === '1' &&
-						$section === 'body'
-					) {
+					if ($this->extConfig['javascript.']['doNotRemoveInDocInBody'] === '1' && $section === 'body') {
 						$this->javascript[$section][$i]['minify-ignore'] = false;
 						$this->javascript[$section][$i]['compress-ignore'] = true;
 						$this->javascript[$section][$i]['merge-ignore'] = true;
 						$this->javascript[$section][$i]['addInDocument'] = true;
 					}
-
-				} else {
+				} elseif ($source !== '') {
 					// try to fetch the content of the css file
 					$file = ($source{0} === '/' ? substr($source, 1) : $source);
 					if (strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
