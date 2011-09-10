@@ -608,7 +608,7 @@ class tx_scriptmerger {
 			} elseif ($source !== '') {
 				// try to fetch the content of the css file
 				$file = ($source{0} === '/' ? substr($source, 1) : $source);
-				if (strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
+				if ($GLOBALS['TSFE']->absRefPrefix !== '' && strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
 					$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 				}
 				if (file_exists(PATH_site . $file)) {
@@ -804,7 +804,7 @@ class tx_scriptmerger {
 				} elseif ($source !== '') {
 					// try to fetch the content of the css file
 					$file = ($source{0} === '/' ? substr($source, 1) : $source);
-					if (strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
+					if ($GLOBALS['TSFE']->absRefPrefix !== '' && strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
 						$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 					}
 					$file = PATH_site . $file;
