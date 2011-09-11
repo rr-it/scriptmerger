@@ -1086,6 +1086,14 @@ class tx_scriptmerger {
 				$pattern = '/<\/body>/i';
 			} else {
 				$pattern = '/<(?:base|meta name="generator"|link|title|\/head).*?>/is';
+
+				$mergedFile = array_pop($javascriptBySection);
+				$javascriptBySection = array_reverse($javascriptBySection);
+				if ($mergedFile['merge-ignore']) {
+					$javascriptBySection = array_unshift($javascriptBySection, $mergedFile);
+				} else {
+					$javascriptBySection[] = $mergedFile;
+				}
 			}
 
 			foreach ($javascriptBySection as $index => $javascriptProperties) {
