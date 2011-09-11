@@ -808,13 +808,18 @@ class tx_scriptmerger {
 						$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 					}
 					$file = PATH_site . $file;
-					$content = (file_exists($file) ? file_get_contents($file) : $this->getExternalFile($source));
+
+					if (file_exists($file)) {
+						$content = file_get_contents($file);
+					} else {
+						$content = $this->getExternalFile($source, TRUE);
+					}
 
 					// ignore this file if the content could not be fetched
-					if ($content == '') {
-						$this->javascript[$section][$i]['minify-ignore'] = true;
-						$this->javascript[$section][$i]['compress-ignore'] = true;
-						$this->javascript[$section][$i]['merge-ignore'] = true;
+					if (trim($content) === '') {
+						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
+						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
+						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
 						continue;
 					}
 
@@ -859,9 +864,10 @@ class tx_scriptmerger {
 	 * Gets a file from an external resource (e.g. http://) and caches them
 	 *
 	 * @param string $source Source address
-	 * @return string cache file
+	 * @param boolean $returnContent
+	 * @return string cache file or content (depends on the parameter)
 	 */
-	protected function getExternalFile($source) {
+	protected function getExternalFile($source, $returnContent = FALSE) {
 		$filename = basename($source);
 		$hash = md5($source);
 		$cacheFile = $this->tempDirectories['temp'] . $filename . '-' . $hash;
@@ -878,7 +884,12 @@ class tx_scriptmerger {
 			}
 		}
 
-		return $cacheFile;
+		$returnValue = $cacheFile;
+		if ($returnContent) {
+			$returnValue = $content;
+		}
+
+		return $returnValue;
 	}
 
 	/**
