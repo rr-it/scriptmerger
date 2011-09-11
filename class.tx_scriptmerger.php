@@ -875,6 +875,7 @@ class tx_scriptmerger {
 		$cacheLifetime = ($externalFileCacheLifetime > 0) ? $externalFileCacheLifetime : 3600;
 
 			// check the age of the cache file (also fails with non-existent file)
+		$content = '';
 		if ((int) filemtime($cacheFile) <= ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
 			$content = t3lib_div::getURL($source);
 			if ($content !== FALSE) {
@@ -882,6 +883,8 @@ class tx_scriptmerger {
 			} else {
 				$cacheFile = '';
 			}
+		} elseif ($returnContent) {
+			$content = file_get_contents($cacheFile);
 		}
 
 		$returnValue = $cacheFile;
