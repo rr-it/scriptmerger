@@ -1077,7 +1077,6 @@ class tx_scriptmerger {
 				$pattern = '/<(?:base|meta name="generator"|link|title|\/head).*?>/is';
 			}
 
-			ksort($javascriptBySection);
 			foreach ($javascriptBySection as $index => $javascriptProperties) {
 				$file = $javascriptProperties['file'];
 
