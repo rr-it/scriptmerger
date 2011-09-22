@@ -947,8 +947,14 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		// minify content (the ending semicolon must be added to prevent minification bugs)
+			// check for conditional compilation code to fix an issue with jsmin+
+		$hasConditionalCompilation = FALSE;
 		if ($this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
+			$hasConditionalCompilation = preg_match('/\/\*@cc_on/is', $properties['content']);
+		}
+
+		// minify content (the ending semicolon must be added to prevent minimisation bugs)
+		if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 			/** @noinspection PhpUndefinedConstantInspection */
 			if (!class_exists(JSMinPlus, false)) {
 				/** Minify: JSMin+ */
