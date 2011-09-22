@@ -1136,14 +1136,14 @@ class tx_scriptmerger {
 				// add content right after the opening head tag or inside the body
 				$GLOBALS['TSFE']->content = preg_replace(
 					$pattern,
-					($section === 'body' ? $content . '\0' : '\0' . $content),
+					($this->extConfig['javascript.']['addBeforeBody'] === '1' ? $content . '\0' : '\0' . $content),
 					$GLOBALS['TSFE']->content,
 					1
 				);
 			}
 		}
 
-		// remove all empty body markers above 100
+		// remove all empty body markers
 		if ($this->extConfig['javascript.']['parseBody'] === '1') {
 			$pattern = '/###MERGER[0-9]*?MERGER###/is';
 			$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
