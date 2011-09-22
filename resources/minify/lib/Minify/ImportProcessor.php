@@ -44,7 +44,6 @@ class Minify_ImportProcessor {
 
     private function _getContent($file)
     {
-        $file = realpath($file);
         if (! $file
             || in_array($file, self::$filesIncluded)
             || false === ($content = @file_get_contents($file))
@@ -52,7 +51,7 @@ class Minify_ImportProcessor {
             // file missing, already included, or failed read
             return '';
         }
-        self::$filesIncluded[] = realpath($file);
+        self::$filesIncluded[] = $file;
         $this->_currentDir = dirname($file);
 
         // remove UTF-8 BOM if present
