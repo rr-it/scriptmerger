@@ -1062,7 +1062,7 @@ class tx_scriptmerger {
 
 					// add content right after the opening head tag
 					$GLOBALS['TSFE']->content = preg_replace(
-						'/<(?:base|meta name="generator"|link|title|\/head).*?>/is',
+						'/<(?:\/base|base|meta name="generator"|link|\/title|\/head).*?>/is',
 						'\0' . $content,
 						$GLOBALS['TSFE']->content,
 						1
@@ -1088,7 +1088,7 @@ class tx_scriptmerger {
 			if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
 				$pattern = '/<\/body>/i';
 			} else {
-				$pattern = '/<(?:base|meta name="generator"|link|title|\/head).*?>/is';
+				$pattern = '/<(?:\/base|base|meta name="generator"|link|\/title|\/head).*?>/is';
 
 				$mergedFile = array_pop($javascriptBySection);
 				$javascriptBySection = array_reverse($javascriptBySection);
