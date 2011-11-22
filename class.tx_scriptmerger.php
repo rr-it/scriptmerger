@@ -135,7 +135,7 @@ class tx_scriptmerger {
 	public function contentPostProcOutput() {
 		// only enter this hook if the page contains COA_INT or USER_INT objects
 		if (!$GLOBALS['TSFE']->isINTincScript()) {
-			return true;
+			return TRUE;
 		}
 
 		return $this->main();
@@ -152,7 +152,7 @@ class tx_scriptmerger {
 	public function contentPostProcAll() {
 		// only enter this hook if the page doesn't contains any COA_INT or USER_INT objects
 		if ($GLOBALS['TSFE']->isINTincScript()) {
-			return true;
+			return TRUE;
 		}
 
 		return $this->main();
@@ -570,9 +570,9 @@ class tx_scriptmerger {
 			$title = trim($cssTags[5][$i]);
 			
 			// add basic entry
-			$this->css[$relation][$media][$i]['minify-ignore'] = false;
-			$this->css[$relation][$media][$i]['compress-ignore'] = false;
-			$this->css[$relation][$media][$i]['merge-ignore'] = false;
+			$this->css[$relation][$media][$i]['minify-ignore'] = FALSE;
+			$this->css[$relation][$media][$i]['compress-ignore'] = FALSE;
+			$this->css[$relation][$media][$i]['merge-ignore'] = FALSE;
 			$this->css[$relation][$media][$i]['file'] = $source;
 			$this->css[$relation][$media][$i]['content'] = '';
 			$this->css[$relation][$media][$i]['basename'] = '';
@@ -620,28 +620,28 @@ class tx_scriptmerger {
 
 				// ignore this file if the content could not be fetched
 				if ($content == '') {
-					$this->css[$relation][$media][$i]['minify-ignore'] = true;
-					$this->css[$relation][$media][$i]['compress-ignore'] = true;
-					$this->css[$relation][$media][$i]['merge-ignore'] = true;
+					$this->css[$relation][$media][$i]['minify-ignore'] = TRUE;
+					$this->css[$relation][$media][$i]['compress-ignore'] = TRUE;
+					$this->css[$relation][$media][$i]['merge-ignore'] = TRUE;
 					continue;
 				}
 
 				// check if the file should be ignored for some processes
 				if ($this->extConfig['css.']['minify.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['css.']['minify.']['ignore'], $source)) {
-						$this->css[$relation][$media][$i]['minify-ignore'] = true;
+						$this->css[$relation][$media][$i]['minify-ignore'] = TRUE;
 					}
 				}
 
 				if ($this->extConfig['css.']['compress.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['css.']['compress.']['ignore'], $source)) {
-						$this->css[$relation][$media][$i]['compress-ignore'] = true;
+						$this->css[$relation][$media][$i]['compress-ignore'] = TRUE;
 					}
 				}
 
 				if ($this->extConfig['css.']['merge.']['ignore'] !== '') {
 					if (preg_match($this->extConfig['css.']['merge.']['ignore'], $source)) {
-						$this->css[$relation][$media][$i]['merge-ignore'] = true;
+						$this->css[$relation][$media][$i]['merge-ignore'] = TRUE;
 					}
 				}
 
@@ -701,20 +701,11 @@ class tx_scriptmerger {
 
 		// remove any js code inside the output content
 		if (count($javascriptTags['head'][0])) {
-			$head = preg_replace(
-				$searchScriptsPattern,
-				'',
-				$head,
-				count($javascriptTags['head'][0])
-			);
+			$head = preg_replace($searchScriptsPattern, '', $head, count($javascriptTags['head'][0]));
 
 			// replace head with new one
 			$pattern = '/<head>.+?<\/head>/is';
-			$GLOBALS['TSFE']->content = preg_replace(
-				$pattern,
-				$head,
-				$GLOBALS['TSFE']->content
-			);
+			$GLOBALS['TSFE']->content = preg_replace($pattern, $head, $GLOBALS['TSFE']->content);
 		}
 
 		// fetch the body content
@@ -731,10 +722,7 @@ class tx_scriptmerger {
 			// we leave markers in the form ###100### at the original places to write them
 			// back here; it's started by 100
 			if (count($javascriptTags['body'][0])) {
-				$function = create_function(
-					'',
-					'static $i = 0; return \'###MERGER\' . $i++ . \'MERGER###\';'
-				);
+				$function = create_function('', 'static $i = 0; return \'###MERGER\' . $i++ . \'MERGER###\';');
 
 				$body = preg_replace_callback(
 					$searchScriptsPattern,
@@ -745,11 +733,7 @@ class tx_scriptmerger {
 
 				// replace body with new one
 				$pattern = '/<body.*>.+?<\/body>/is';
-				$GLOBALS['TSFE']->content = preg_replace(
-					$pattern,
-					$body,
-					$GLOBALS['TSFE']->content
-				);
+				$GLOBALS['TSFE']->content = preg_replace($pattern, $body, $GLOBALS['TSFE']->content);
 			}
 		}
 
@@ -761,16 +745,16 @@ class tx_scriptmerger {
 				$source = trim($results[1][$i]);
 
 				// add basic entry
-				$this->javascript[$section][$i]['minify-ignore'] = false;
-				$this->javascript[$section][$i]['compress-ignore'] = false;
-				$this->javascript[$section][$i]['merge-ignore'] = false;
+				$this->javascript[$section][$i]['minify-ignore'] = FALSE;
+				$this->javascript[$section][$i]['compress-ignore'] = FALSE;
+				$this->javascript[$section][$i]['merge-ignore'] = FALSE;
 				$this->javascript[$section][$i]['file'] = $source;
 				$this->javascript[$section][$i]['content'] = '';
 				$this->javascript[$section][$i]['basename'] = '';
-				$this->javascript[$section][$i]['addInDocument'] = false;
+				$this->javascript[$section][$i]['addInDocument'] = FALSE;
 
 				// styles which are added inside the document must be parsed again
-				// to fetch the pure css code
+				// to fetch the pure js code
 				if ($source === '') {
 					$javascriptContent = array();
 					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
@@ -796,11 +780,12 @@ class tx_scriptmerger {
 
 					// inDocument styles of the body shouldn't be removed from their position
 					if ($this->extConfig['javascript.']['doNotRemoveInDocInBody'] === '1' && $section === 'body') {
-						$this->javascript[$section][$i]['minify-ignore'] = false;
-						$this->javascript[$section][$i]['compress-ignore'] = true;
-						$this->javascript[$section][$i]['merge-ignore'] = true;
-						$this->javascript[$section][$i]['addInDocument'] = true;
+						$this->javascript[$section][$i]['minify-ignore'] = FALSE;
+						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
+						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
+						$this->javascript[$section][$i]['addInDocument'] = TRUE;
 					}
+
 				} elseif ($source !== '') {
 					// try to fetch the content of the css file
 					$file = ($source{0} === '/' ? substr($source, 1) : $source);
@@ -827,19 +812,19 @@ class tx_scriptmerger {
 					if ($this->extConfig['javascript.']['minify.']['ignore'] !== '' &&
 						preg_match($this->extConfig['javascript.']['minify.']['ignore'], $source)
 					) {
-						$this->javascript[$section][$i]['minify-ignore'] = true;
+						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
 					}
 
 					if ($this->extConfig['javascript.']['compress.']['ignore'] !== '' &&
 						preg_match($this->extConfig['javascript.']['compress.']['ignore'], $source)
 					) {
-						$this->javascript[$section][$i]['compress-ignore'] = true;
+						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
 					}
 
 					if ($this->extConfig['javascript.']['merge.']['ignore'] !== '' &&
 						preg_match($this->extConfig['javascript.']['merge.']['ignore'], $source)
 					) {
-						$this->javascript[$section][$i]['merge-ignore'] = true;
+						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
 					}
 
 					// set the javascript file with it's content
@@ -850,11 +835,8 @@ class tx_scriptmerger {
 					// base name without file prefix and prefixed hash of the content
 					$filename = basename($source);
 					$hash = md5($content);
-					$this->javascript[$section][$i]['basename'] = substr(
-						$filename,
-						0,
-						strrpos($filename, '.')
-					) . '-' . $hash;
+					$this->javascript[$section][$i]['basename'] =
+						substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
 				}
 			}
 		}
@@ -956,7 +938,7 @@ class tx_scriptmerger {
 		// minify content (the ending semicolon must be added to prevent minimisation bugs)
 		if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 			/** @noinspection PhpUndefinedConstantInspection */
-			if (!class_exists(JSMinPlus, false)) {
+			if (!class_exists(JSMinPlus, FALSE)) {
 				/** Minify: JSMin+ */
 				require_once(t3lib_extMgm::extPath('scriptmerger') .
 					'resources/jsminplus.php');
@@ -966,7 +948,7 @@ class tx_scriptmerger {
 			$minifiedContent = JSMinPlus::minify($properties['content']);
 		} else {
 			/** @noinspection PhpUndefinedConstantInspection */
-			if (!class_exists(JSMin, false)) {
+			if (!class_exists(JSMin, FALSE)) {
 				/** Minify: JSMin */
 				require_once(PATH_typo3 . 'contrib/jsmin/jsmin.php');
 			}
