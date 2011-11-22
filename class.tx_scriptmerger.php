@@ -1086,7 +1086,7 @@ class tx_scriptmerger {
 				$mergedFile = array_pop($javascriptBySection);
 				$javascriptBySection = array_reverse($javascriptBySection);
 				if ($mergedFile['merge-ignore']) {
-					$javascriptBySection = array_unshift($javascriptBySection, $mergedFile);
+					array_unshift($javascriptBySection, $mergedFile);
 				} else {
 					$javascriptBySection[] = $mergedFile;
 				}
