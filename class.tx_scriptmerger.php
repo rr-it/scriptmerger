@@ -1073,6 +1073,7 @@ class tx_scriptmerger {
 	protected function writeJavascriptToDocument() {
 		// write all files back to the document
 		foreach ($this->javascript as $section => $javascriptBySection) {
+			ksort($javascriptBySection);
 			if (!is_array($javascriptBySection)) {
 				continue;
 			}
@@ -1081,15 +1082,8 @@ class tx_scriptmerger {
 			if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
 				$pattern = '/<\/body>/i';
 			} else {
-				$pattern = '/<(?:\/base|base|meta name="generator"|link|\/title|\/head).*?>/is';
-
-				$mergedFile = array_pop($javascriptBySection);
+				$pattern = '/<(?:\/base|base|meta name="generator"|link|\/title).*?>/is';
 				$javascriptBySection = array_reverse($javascriptBySection);
-				if ($mergedFile['merge-ignore']) {
-					array_unshift($javascriptBySection, $mergedFile);
-				} else {
-					$javascriptBySection[] = $mergedFile;
-				}
 			}
 
 			foreach ($javascriptBySection as $index => $javascriptProperties) {
