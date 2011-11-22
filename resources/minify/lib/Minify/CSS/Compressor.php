@@ -43,7 +43,7 @@ class Minify_CSS_Compressor {
     /**
      * @var bool Are we "in" a hack?
      *
-     * I.e. are some browsers targetted until the next comment?
+     * I.e. are some browsers targeted until the next comment?
      */
     protected $_inHack = false;
 
@@ -52,8 +52,6 @@ class Minify_CSS_Compressor {
      * Constructor
      *
      * @param array $options (currently ignored)
-     *
-     * @return null
      */
     private function __construct($options) {
         $this->_options = $options;
