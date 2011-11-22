@@ -743,6 +743,11 @@ class tx_scriptmerger {
 			for ($i = 0; $i < $amountOfResults; ++$i) {
 				// get source attribute
 				$source = trim($results[1][$i]);
+				$isSourceFromMainAttribute = FALSE;
+				if ($source !== '') {
+					preg_match('/^<script([^>]*)>/', trim($results[0][$i]), $scriptAttribute);
+					$isSourceFromMainAttribute = (strpos($scriptAttribute[1], $source) !== FALSE);
+				}
 
 				// add basic entry
 				$this->javascript[$section][$i]['minify-ignore'] = FALSE;
@@ -753,40 +758,7 @@ class tx_scriptmerger {
 				$this->javascript[$section][$i]['basename'] = '';
 				$this->javascript[$section][$i]['addInDocument'] = FALSE;
 
-				// styles which are added inside the document must be parsed again
-				// to fetch the pure js code
-				if ($source === '') {
-					$javascriptContent = array();
-					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
-
-					// we doesn't need to continue if it was an empty style tag
-					if ($javascriptContent[1][0] === '') {
-						unset($this->javascript[$section][$i]);
-						continue;
-					}
-
-					// save the content into a temporary file
-					$hash = md5($javascriptContent[1][0]);
-					$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
-
-					if (!file_exists($source . '.js')) {
-						t3lib_div::writeFile($source . '.js', $javascriptContent[1][0]);
-					}
-
-					// try to resolve any @import occurrences
-					$this->javascript[$section][$i]['file'] = $source . '.js';
-					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
-					$this->javascript[$section][$i]['basename'] = basename($source);
-
-					// inDocument styles of the body shouldn't be removed from their position
-					if ($this->extConfig['javascript.']['doNotRemoveInDocInBody'] === '1' && $section === 'body') {
-						$this->javascript[$section][$i]['minify-ignore'] = FALSE;
-						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
-						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
-						$this->javascript[$section][$i]['addInDocument'] = TRUE;
-					}
-
-				} elseif ($source !== '') {
+				if ($isSourceFromMainAttribute) {
 					// try to fetch the content of the css file
 					$file = ($source{0} === '/' ? substr($source, 1) : $source);
 					if ($GLOBALS['TSFE']->absRefPrefix !== '' && strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
@@ -837,6 +809,39 @@ class tx_scriptmerger {
 					$hash = md5($content);
 					$this->javascript[$section][$i]['basename'] =
 						substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
+
+				} else {
+					// styles which are added inside the document must be parsed again
+					// to fetch the pure js code
+					$javascriptContent = array();
+					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
+
+					// we doesn't need to continue if it was an empty style tag
+					if ($javascriptContent[1][0] === '') {
+						unset($this->javascript[$section][$i]);
+						continue;
+					}
+
+					// save the content into a temporary file
+					$hash = md5($javascriptContent[1][0]);
+					$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
+
+					if (!file_exists($source . '.js')) {
+						t3lib_div::writeFile($source . '.js', $javascriptContent[1][0]);
+					}
+
+					// try to resolve any @import occurrences
+					$this->javascript[$section][$i]['file'] = $source . '.js';
+					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
+					$this->javascript[$section][$i]['basename'] = basename($source);
+
+					// inDocument styles of the body shouldn't be removed from their position
+					if ($this->extConfig['javascript.']['doNotRemoveInDocInBody'] === '1' && $section === 'body') {
+						$this->javascript[$section][$i]['minify-ignore'] = FALSE;
+						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
+						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
+						$this->javascript[$section][$i]['addInDocument'] = TRUE;
+					}
 				}
 			}
 		}
