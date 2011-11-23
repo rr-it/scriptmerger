@@ -1079,7 +1079,8 @@ class tx_scriptmerger {
 			}
 
 			// prepare pattern
-			if ($this->extConfig['javascript.']['addBeforeBody'] === '1') {
+			$addToBody = ($section === 'body' || $this->extConfig['javascript.']['addBeforeBody'] === '1');
+			if ($addToBody) {
 				$pattern = '/<\/body>/i';
 			} else {
 				$pattern = '/<(?:\/base|base|meta name="generator"|link|\/title).*?>/is';
@@ -1111,7 +1112,7 @@ class tx_scriptmerger {
 				}
 
 				// add body scripts back to their original place if they were ignored
-				if ($section == 'body' && $javascriptProperties['merge-ignore']) {
+				if ($section === 'body' && $javascriptProperties['merge-ignore']) {
 					$GLOBALS['TSFE']->content = str_replace(
 						'###MERGER' . $index . 'MERGER###',
 						$content,
@@ -1121,12 +1122,8 @@ class tx_scriptmerger {
 				}
 
 				// add content right after the opening head tag or inside the body
-				$GLOBALS['TSFE']->content = preg_replace(
-					$pattern,
-					($this->extConfig['javascript.']['addBeforeBody'] === '1' ? $content . '\0' : '\0' . $content),
-					$GLOBALS['TSFE']->content,
-					1
-				);
+				$replacement = ($addToBody ? $content . '\0' : '\0' . $content);
+				$GLOBALS['TSFE']->content = preg_replace($pattern, $replacement, $GLOBALS['TSFE']->content, 1);
 			}
 		}
 
