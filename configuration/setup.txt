@@ -1,5 +1,5 @@
 config.compressJs = 0
-config.minifyJS = 0
+config.compressCss = 0
 
 plugin.tx_scriptmerger {
 	# minification, compressing and merging of css files

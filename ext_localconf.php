@@ -18,5 +18,6 @@ if (TYPO3_MODE == 'FE') {
 
 	// needs to be disabled for the frontend, otherwise the default exclude rule prevents any script files from merging
 $TYPO3_CONF_VARS['FE']['versionNumberInFilename'] = '';
+$TYPO3_CONF_VARS['FE']['compressionLevel'] = 0;
 
 ?>
