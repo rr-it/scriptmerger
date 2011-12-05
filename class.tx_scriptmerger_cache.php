@@ -2,7 +2,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2010 Stefan Galinski (stefan.galinski@gmail.com)
+ *  (c) 2010-2011 Stefan Galinski (stefan.galinski@gmail.com)
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -26,16 +26,10 @@
  ***************************************************************/
 
 /**
- * This class contains a class which contains a hook method
- * for the "clear all cache" action in the TYPO3 backend.
- *
- * @author Stefan Galinski <stefan.galinski@gmail.com>
- */
-
-/**
  * This class contains a hook method for the "clear all cache" action in the TYPO3 backend.
  *
  * @author Stefan Galinski <stefan.galinski@gmail.com>
+ * @package scriptmerger
  */
 class tx_scriptmerger_cache {
 	/**
@@ -49,7 +43,6 @@ class tx_scriptmerger_cache {
 	 * Initializes some class variables...
 	 */
 	public function __construct() {
-		// define temporary directories
 		$this->tempDirectories = array(
 			PATH_site . 'typo3temp/scriptmerger/' => 0,
 			PATH_site . 'typo3temp/scriptmerger/temp/' => 0,
@@ -61,18 +54,17 @@ class tx_scriptmerger_cache {
 	/**
 	 * Clear cache post processor
 	 *
-	 * This method deletes all temporary files.
+	 * This method deletes all temporary files that are older than one month and
+	 * if the deletion of the whole cache is requested.
 	 *
 	 * @param object $params parameter array
 	 * @return void
 	 */
 	public function clearCachePostProc(&$params) {
-		// only if the cache command is available
 		if ($params['cacheCmd'] !== 'all') {
 			return;
 		}
 
-		// remove any files in the directories array that are older than one month
 		$now = time();
 		foreach ($this->tempDirectories as $tempDirectory => $maxAge) {
 			if (!is_dir($tempDirectory)) {
@@ -80,9 +72,9 @@ class tx_scriptmerger_cache {
 			}
 
 			$handle = opendir($tempDirectory);
-			while (false !== ($file = readdir($handle))) {
+			while (FALSE !== ($file = readdir($handle))) {
 
-				if ($file == '.' || $file == '..') {
+				if ($file === '.' || $file === '..') {
 					continue;
 				}
 

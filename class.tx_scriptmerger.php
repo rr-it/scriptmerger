@@ -3,7 +3,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2010 Stefan Galinski <stefan.galinski@gmail.com>
+ *  (c) 2010-2011 Stefan Galinski <stefan.galinski@gmail.com>
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -23,15 +23,6 @@
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
-/**
- * This file contains the main processing class of the extension "scriptmerger". It
- * handles the parsing and replacing of the css and javascript files. Also it contains
- * methods for compressing, minification and merging of such files. The whole functionality
- * uses extensively the functionality of the project minify.
- *
- * @author Stefan Galinski <stefan.galinski@gmail.com>
- */
-
 /** Minify: Import Processor */
 $pathToScriptmerger = t3lib_extMgm::extPath('scriptmerger');
 require_once($pathToScriptmerger . 'resources/minify/lib/Minify/ImportProcessor.php');
@@ -46,6 +37,7 @@ require_once($pathToScriptmerger . 'resources/minify/lib/Minify/CSS/UriRewriter.
  * and compress such files.
  *
  * @author Stefan Galinski <stefan.galinski@gmail.com>
+ * @package scriptmerger
  */
 class tx_scriptmerger {
 	/**
@@ -544,12 +536,7 @@ class tx_scriptmerger {
 		}
 
 		// remove any css code inside the output content
-		$GLOBALS['TSFE']->content = preg_replace(
-			$pattern,
-			'',
-			$GLOBALS['TSFE']->content,
-			count($cssTags[0])
-		);
+		$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content, count($cssTags[0]));
 
 		// parse matches
 		$amountOfResults = count($cssTags[0]);
@@ -991,10 +978,7 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		t3lib_div::writeFile(
-			$newFile,
-			gzencode($properties['content'], 9)
-		);
+		t3lib_div::writeFile($newFile, gzencode($properties['content'], 5));
 
 		return $newFile;
 	}
@@ -1011,10 +995,7 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		t3lib_div::writeFile(
-			$newFile,
-			gzencode($properties['content'], 9)
-		);
+		t3lib_div::writeFile($newFile, gzencode($properties['content'], 5));
 
 		return $newFile;
 	}
@@ -1135,8 +1116,8 @@ class tx_scriptmerger {
 	}
 }
 
-if (defined('TYPO3_MODE') && $TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']) {
-	include_once($TYPO3_CONF_VARS[TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']);
+if (defined('TYPO3_MODE') && $GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']) {
+	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']);
 }
 
 ?>
