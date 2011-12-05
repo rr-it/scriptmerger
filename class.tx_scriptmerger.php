@@ -270,7 +270,7 @@ class tx_scriptmerger {
 						}
 
 						// add content
-						$mergedContent .= $cssProperties['content'] . "\n";
+						$mergedContent .= $cssProperties['content'] . LF;
 
 						// remove file from array
 						unset($this->css[$relation][$media][$index]);
@@ -384,7 +384,7 @@ class tx_scriptmerger {
 					}
 
 					// add content
-					$mergedContent .= $javascriptProperties['content'] . "\n";
+					$mergedContent .= $javascriptProperties['content'] . LF;
 
 					// remove file from array
 					unset($this->javascript[$section][$index]);
@@ -910,11 +910,8 @@ class tx_scriptmerger {
 	 * @return string new filename
 	 */
 	protected function minifyJavascriptFile(&$properties) {
-		// get new filename
-		$newFile = $this->tempDirectories['minified'] .
-			$properties['basename'] . '.min.js';
-
-		// stop further processing if the file already exists
+			// stop further processing if the file already exists
+		$newFile = $this->tempDirectories['minified'] . $properties['basename'] . '.min.js';
 		if (file_exists($newFile)) {
 			$properties['basename'] .= '.min';
 			$properties['content'] = file_get_contents($newFile);
@@ -927,40 +924,33 @@ class tx_scriptmerger {
 			$hasConditionalCompilation = preg_match('/\/\*@cc_on/is', $properties['content']);
 		}
 
-		// minify content (the ending semicolon must be added to prevent minimisation bugs)
+			// minify content (the ending semicolon must be added to prevent minimisation bugs)
 		if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
-			/** @noinspection PhpUndefinedConstantInspection */
-			if (!class_exists(JSMinPlus, FALSE)) {
-				/** Minify: JSMin+ */
-				require_once(t3lib_extMgm::extPath('scriptmerger') .
-					'resources/jsminplus.php');
+			if (!class_exists('JSMinPlus', FALSE)) {
+				require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsminplus.php');
 			}
 
-			/** @noinspection PhpUndefinedClassInspection */
 			$minifiedContent = JSMinPlus::minify($properties['content']);
+
 		} else {
-			/** @noinspection PhpUndefinedConstantInspection */
-			if (!class_exists(JSMin, FALSE)) {
-				/** Minify: JSMin */
-				require_once(PATH_typo3 . 'contrib/jsmin/jsmin.php');
+			if (!class_exists('JSMin', FALSE)) {
+				require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsmin.php');
 			}
 
-			/** @noinspection PhpUndefinedClassInspection */
 			$minifiedContent = JSMin::minify($properties['content']);
 		}
 
-		if (strlen($minifiedContent) > 2 || count(explode("\n", $minifiedContent)) > 50) {
+			// check result length
+		if (strlen($minifiedContent) > 2 || count(explode(LF, $minifiedContent)) > 50) {
 			$properties['content'] = $minifiedContent . ';';
+
 		} else {
 			$message = 'This javascript file could not be minified: "' . $properties['file'] . '"! ' .
 				'You should exclude it from the minification process!';
-			t3lib_div::sysLog($message, 'scriptmerger', 3);
+			t3lib_div::sysLog($message, 'scriptmerger', t3lib_div::SYSLOG_SEVERITY_ERROR);
 		}
 
-		// save content inside the new file
 		t3lib_div::writeFile($newFile, $properties['content']);
-
-		// save new part of the base name
 		$properties['basename'] .= '.min';
 
 		return $newFile;
@@ -1021,17 +1011,17 @@ class tx_scriptmerger {
 
 					// build css script link or add the content directly into the document
 					if ($this->extConfig['css.']['addContentInDocument'] === '1') {
-						$content = "\n\t" .
-							'<style media="' . $media . '" type="text/css">' . "\n" .
-							"\t" . '/* <![CDATA[ */' . "\n" .
-							"\t" . $cssProperties['content'] . "\n" .
-							"\t" . '/* ]]> */' . "\n" .
-							"\t" . '</style>' . "\n";
+						$content = LF . "\t" .
+							'<style media="' . $media . '" type="text/css">' . LF .
+							"\t" . '/* <![CDATA[ */' . LF .
+							"\t" . $cssProperties['content'] . LF .
+							"\t" . '/* ]]> */' . LF .
+							"\t" . '</style>' . LF;
 					} else {
 						$title = (trim($cssProperties['title']) !== '' ?
 							'title="' . $cssProperties['title']  . '"' : '');
-						$content = "\n\t" . '<link rel="' . $relation . '" type="text/css" ' .
-							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . "\n";
+						$content = LF . "\t" . '<link rel="' . $relation . '" type="text/css" ' .
+							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . LF;
 					}
 
 					// add content right after the opening head tag
@@ -1082,14 +1072,14 @@ class tx_scriptmerger {
 					$this->extConfig['javascript.']['addContentInDocument'] === '1'
 				) {
 					$content = "\t" .
-						'<script type="text/javascript">' . "\n" .
-						"\t" . '/* <![CDATA[ */' . "\n" .
-						"\t" . $javascriptProperties['content'] . "\n" .
-						"\t" . '/* ]]> */' . "\n" .
-						"\t" . '</script>' . "\n";
+						'<script type="text/javascript">' . LF .
+						"\t" . '/* <![CDATA[ */' . LF .
+						"\t" . $javascriptProperties['content'] . LF .
+						"\t" . '/* ]]> */' . LF .
+						"\t" . '</script>' . LF;
 				} else {
 					$content = "\t" .
-						'<script type="text/javascript" src="' . $file . '"></script>' . "\n";
+						'<script type="text/javascript" src="' . $file . '"></script>' . LF;
 				}
 
 				// add body scripts back to their original place if they were ignored
