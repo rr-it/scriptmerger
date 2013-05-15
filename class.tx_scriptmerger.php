@@ -110,7 +110,7 @@ class tx_scriptmerger {
 	}
 
 	/**
-	 * This hook is executed if the page contains *_INT objects! It's called always at the
+	 * This hook is executed if the page contains *_INT objects! It's called always as the
 	 * last hook before the final output. This isn't the case if you are using a
 	 * static file cache like nc_staticfilecache.
 	 *
@@ -129,7 +129,7 @@ class tx_scriptmerger {
 
 	/**
 	 * The hook is only executed if the page does not contains any *_INT objects. It's called
-	 * always if the page was not cached or for the first hit!
+	 * always if the page was not already cached or on first hit!
 	 *
 	 * @return bool
 	 */
@@ -224,6 +224,10 @@ class tx_scriptmerger {
 			}
 
 			$this->writeConditionalCommentsToDocument();
+		}
+
+		if (is_array($this->extConfig['urlRegularExpressions.']) && count($this->extConfig['urlRegularExpressions.'])) {
+			$this->executeUserDefinedRegularExpressionsOnContent($this->extConfig['urlRegularExpressions.']);
 		}
 	}
 
@@ -1092,6 +1096,40 @@ class tx_scriptmerger {
 		if ($this->extConfig['javascript.']['parseBody'] === '1') {
 			$pattern = '/###MERGER[0-9]*?MERGER###/is';
 			$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
+		}
+	}
+
+	/**
+	 * Executes user defined regular expressions on the href/src urls for e.g. use an cookie-less asset domain.
+	 *
+	 * @param array $expressions
+	 * @return void
+	 */
+	protected function executeUserDefinedRegularExpressionsOnContent($expressions) {
+		foreach ($expressions as $index => $expression) {
+			if (strpos($index, '.') !== FALSE || !isset($expressions[$index . '.']['replacement'])) {
+				continue;
+			}
+
+			$replacement = trim($expressions[$index . '.']['replacement']);
+			if ($replacement === '') {
+				continue;
+			}
+
+			$userExpression = trim(str_replace('/', '\/', $expression));
+			$expression = '/<(?:img|link|style|script|meta)' .
+				'(?=.+?(?:content|href|src)="(' . $userExpression . ')")[^>]*?>/iU';
+			preg_match_all($expression, $GLOBALS['TSFE']->content, $matches);
+			if (is_array($matches[1])) {
+				foreach ($matches[1] as $match) {
+					if (trim($match) === '') {
+						continue;
+					}
+
+					$changedUrl = preg_replace('/' . $userExpression . '/is', $replacement, $match);
+					$GLOBALS['TSFE']->content = str_replace($match, $changedUrl, $GLOBALS['TSFE']->content);
+				}
+			}
 		}
 	}
 }
