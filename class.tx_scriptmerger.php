@@ -67,11 +67,11 @@ class tx_scriptmerger {
 	 * Structure:
 	 * - $relation (rel attribute)
 	 *   - $media (media attribute)
-	 *	 - $file
-	 *	   |-content => string
-	 *	   |-basename => string (base name of $file without file prefix)
-	 *	   |-minify-ignore => bool
-	 *	   |-merge-ignore => bool
+	 *     - $file
+	 *       |-content => string
+	 *       |-basename => string (base name of $file without file prefix)
+	 *       |-minify-ignore => bool
+	 *       |-merge-ignore => bool
 	 *
 	 * @var array
 	 */
@@ -95,7 +95,6 @@ class tx_scriptmerger {
 	 * Constructor
 	 */
 	public function __construct() {
-		// define temporary directories
 		$this->tempDirectories = array(
 			'main' => PATH_site . 'typo3temp/scriptmerger/',
 			'temp' => PATH_site . 'typo3temp/scriptmerger/temp/',
@@ -104,20 +103,16 @@ class tx_scriptmerger {
 			'merged' => PATH_site . 'typo3temp/scriptmerger/uncompressed/'
 		);
 
-		// create missing directories
 		foreach ($this->tempDirectories as $directory) {
 			if (!is_dir($directory)) {
 				t3lib_div::mkdir($directory);
 			}
 		}
 
-		// prepare the extension configuration
 		$this->prepareExtensionConfiguration();
 	}
 
 	/**
-	 * Just a wrapper for the main function! It's used for the contentPostProc-output hook.
-	 *
 	 * This hook is executed if the page contains *_INT objects! It's called always at the
 	 * last hook before the final output. This isn't the case if you are using a
 	 * static file cache like nc_staticfilecache.
@@ -125,29 +120,31 @@ class tx_scriptmerger {
 	 * @return bool
 	 */
 	public function contentPostProcOutput() {
-		// only enter this hook if the page contains COA_INT or USER_INT objects
-		if (!$GLOBALS['TSFE']->isINTincScript()) {
+		/** @var $tsfe tslib_fe */
+		$tsfe = $GLOBALS['TSFE'];
+		if (!$tsfe->isINTincScript()) {
 			return TRUE;
 		}
 
-		return $this->main();
+		$this->main();
+		return TRUE;
 	}
 
 	/**
-	 * Just a wrapper for the main function!  It's used for the contentPostProc-all hook.
-	 *
-	 * The hook is only executed if the page doesn't contains any *_INT objects. It's called
-	 * always if the page wasn't cached or for the first hit!
+	 * The hook is only executed if the page does not contains any *_INT objects. It's called
+	 * always if the page was not cached or for the first hit!
 	 *
 	 * @return bool
 	 */
 	public function contentPostProcAll() {
-		// only enter this hook if the page doesn't contains any COA_INT or USER_INT objects
-		if ($GLOBALS['TSFE']->isINTincScript()) {
+		/** @var $tsfe tslib_fe */
+		$tsfe = $GLOBALS['TSFE'];
+		if ($tsfe->isINTincScript()) {
 			return TRUE;
 		}
 
-		return $this->main();
+		$this->main();
+		return TRUE;
 	}
 
 	/**
@@ -156,12 +153,8 @@ class tx_scriptmerger {
 	 * @return void
 	 */
 	protected function prepareExtensionConfiguration() {
-		// global extension configuration
-		$this->extConfig = unserialize(
-			$GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['scriptmerger']
-		);
+		$this->extConfig = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['scriptmerger']);
 
-		// typoscript extension configuration
 		$tsSetup = $GLOBALS['TSFE']->tmpl->setup['plugin.']['tx_scriptmerger.'];
 		if (is_array($tsSetup)) {
 			foreach ($tsSetup as $key => $value) {
@@ -344,7 +337,7 @@ class tx_scriptmerger {
 	 * @param string $content
 	 * @return string
 	 */
-	protected function uniqueCharset($content){
+	protected function uniqueCharset($content) {
 		if (!empty($this->extConfig['css.']['uniqueCharset.']['value'])) {
 			$content = preg_replace('/@charset[^;]+;/', '', $content);
 			$content = $this->extConfig['css.']['uniqueCharset.']['value'] . $content;
@@ -511,23 +504,23 @@ class tx_scriptmerger {
 	protected function getCSSfiles() {
 		// filter pattern for the inDoc styles (fetches the content)
 		$filterInDocumentPattern = '/' .
-			'<style.*?>' .					// This expression removes the opening style tag
-			'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
-			'\s*(.*?)' .					// We save the pure css content,
-			'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
-			'\s*<\/style>' .				// and closing style tag
+			'<style.*?>' . // This expression removes the opening style tag
+			'(?:.*?\/\*<!\[CDATA\[\*\/)?' . // and the optionally prefixed CDATA string.
+			'\s*(.*?)' . // We save the pure css content,
+			'(?:\s*\/\*\]\]>\*\/)?' . // remove the possible closing CDATA string
+			'\s*<\/style>' . // and closing style tag
 			'/is';
 
 		// parse all available css code inside link and style tags
 		$cssTags = array();
 		$pattern = '/' .
-			'<(link|sty)' .							// Parse any link and style tags.
-				'(?=.+?(?:media="(.*?)"|>))' .		// Fetch the media attribute
-				'(?=.+?(?:href="(.*?)"|>))' .		// and the href attribute
-				'(?=.+?(?:rel="(.*?)"|>))' .		// and the rel attribute
-				'(?=.+?(?:title="(.*?)"|>))' .		// and the title attribute of the tag.
-			'(?:[^>]+?\.css[^>]+?\/?>' .			// Continue parsing from \1 to the closing tag.
-				'|le[^>]*?>[^>]+?<\/style>)\s*' .
+			'<(link|sty)' . // Parse any link and style tags.
+			'(?=.+?(?:media="(.*?)"|>))' . // Fetch the media attribute
+			'(?=.+?(?:href="(.*?)"|>))' . // and the href attribute
+			'(?=.+?(?:rel="(.*?)"|>))' . // and the rel attribute
+			'(?=.+?(?:title="(.*?)"|>))' . // and the title attribute of the tag.
+			'(?:[^>]+?\.css[^>]+?\/?>' . // Continue parsing from \1 to the closing tag.
+			'|le[^>]*?>[^>]+?<\/style>)\s*' .
 			'/is';
 
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $cssTags);
@@ -555,7 +548,7 @@ class tx_scriptmerger {
 
 			// get title attribute
 			$title = trim($cssTags[5][$i]);
-			
+
 			// add basic entry
 			$this->css[$relation][$media][$i]['minify-ignore'] = FALSE;
 			$this->css[$relation][$media][$i]['compress-ignore'] = FALSE;
@@ -660,21 +653,21 @@ class tx_scriptmerger {
 
 		// create search pattern
 		$searchScriptsPattern = '/' .
-			'<script' .							// This expression includes any script nodes.
-				'(?=.+?(?:src="(.*?)"|>))' .	// It fetches the src attribute.
-			'[^>]*?>' .							// Finally we finish the parsing of the opening tag
-			'.*?<\/script>\s*' .				// until the closing tag.
+			'<script' . // This expression includes any script nodes.
+			'(?=.+?(?:src="(.*?)"|>))' . // It fetches the src attribute.
+			'[^>]*?>' . // Finally we finish the parsing of the opening tag
+			'.*?<\/script>\s*' . // until the closing tag.
 			'/is';
 
 		// filter pattern for the inDoc scripts (fetches the content)
 		$filterInDocumentPattern = '/' .
-			'<script.*?>' .					// The expression removes the opening script tag
-			'(?:.*?\/\*<!\[CDATA\[\*\/)?' .	// and the optionally prefixed CDATA string.
-			'(?:.*?<!--)?' .				// senseless <!-- construct
-			'\s*(.*?)' .					// We save the pure js content,
-			'(?:\s*\/\/\s*-->)?' .			// senseless <!-- construct
-			'(?:\s*\/\*\]\]>\*\/)?' .		// remove the possible closing CDATA string
-			'\s*<\/script>' .				// and closing script tag
+			'<script.*?>' . // The expression removes the opening script tag
+			'(?:.*?\/\*<!\[CDATA\[\*\/)?' . // and the optionally prefixed CDATA string.
+			'(?:.*?<!--)?' . // senseless <!-- construct
+			'\s*(.*?)' . // We save the pure js content,
+			'(?:\s*\/\/\s*-->)?' . // senseless <!-- construct
+			'(?:\s*\/\*\]\]>\*\/)?' . // remove the possible closing CDATA string
+			'\s*<\/script>' . // and closing script tag
 			'/is';
 
 		// fetch the head content
@@ -848,7 +841,7 @@ class tx_scriptmerger {
 		$externalFileCacheLifetime = intval($this->extConfig['externalFileCacheLifetime']);
 		$cacheLifetime = ($externalFileCacheLifetime > 0) ? $externalFileCacheLifetime : 3600;
 
-			// check the age of the cache file (also fails with non-existent file)
+		// check the age of the cache file (also fails with non-existent file)
 		$content = '';
 		if ((int) @filemtime($cacheFile) <= ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
 			$content = t3lib_div::getURL($source);
@@ -910,7 +903,7 @@ class tx_scriptmerger {
 	 * @return string new filename
 	 */
 	protected function minifyJavascriptFile(&$properties) {
-			// stop further processing if the file already exists
+		// stop further processing if the file already exists
 		$newFile = $this->tempDirectories['minified'] . $properties['basename'] . '.min.js';
 		if (file_exists($newFile)) {
 			$properties['basename'] .= '.min';
@@ -918,13 +911,13 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-			// check for conditional compilation code to fix an issue with jsmin+
+		// check for conditional compilation code to fix an issue with jsmin+
 		$hasConditionalCompilation = FALSE;
 		if ($this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 			$hasConditionalCompilation = preg_match('/\/\*@cc_on/is', $properties['content']);
 		}
 
-			// minify content (the ending semicolon must be added to prevent minimisation bugs)
+		// minify content (the ending semicolon must be added to prevent minimisation bugs)
 		if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 			if (!class_exists('JSMinPlus', FALSE)) {
 				require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsminplus.php');
@@ -940,7 +933,7 @@ class tx_scriptmerger {
 			$minifiedContent = JSMin::minify($properties['content']);
 		}
 
-			// check result length
+		// check result length
 		if (strlen($minifiedContent) > 2 || count(explode(LF, $minifiedContent)) > 50) {
 			$properties['content'] = $minifiedContent . ';';
 
@@ -1019,7 +1012,7 @@ class tx_scriptmerger {
 							"\t" . '</style>' . LF;
 					} else {
 						$title = (trim($cssProperties['title']) !== '' ?
-							'title="' . $cssProperties['title']  . '"' : '');
+							'title="' . $cssProperties['title'] . '"' : '');
 						$content = LF . "\t" . '<link rel="' . $relation . '" type="text/css" ' .
 							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . LF;
 					}
@@ -1106,7 +1099,9 @@ class tx_scriptmerger {
 	}
 }
 
-if (defined('TYPO3_MODE') && $GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']) {
+if (defined('TYPO3_MODE')
+	&& $GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']
+) {
 	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']);
 }
 
