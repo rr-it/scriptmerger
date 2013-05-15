@@ -3,7 +3,7 @@
 /***************************************************************
  *  Copyright notice
  *
- *  (c) 2010-2011 Stefan Galinski <stefan.galinski@gmail.com>
+ *  (c) Stefan Galinski <stefan.galinski@gmail.com>
  *  All rights reserved
  *
  *  This script is part of the TYPO3 project. The TYPO3 project is
@@ -35,9 +35,6 @@ require_once($pathToScriptmerger . 'resources/minify/lib/Minify/CSS/UriRewriter.
  * This class contains the parsing and replacing functionality of css and javascript files.
  * Furthermore several wrapper methods to the project minify are available to minify, merge
  * and compress such files.
- *
- * @author Stefan Galinski <stefan.galinski@gmail.com>
- * @package scriptmerger
  */
 class tx_scriptmerger {
 	/**
