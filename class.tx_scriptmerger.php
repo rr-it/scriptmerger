@@ -919,25 +919,30 @@ class tx_scriptmerger {
 		}
 
 		// minify content (the ending semicolon must be added to prevent minimisation bugs)
-		if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
-			if (!class_exists('JSMinPlus', FALSE)) {
-				require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsminplus.php');
+		$hasErrors = FALSE;
+		$minifiedContent = '';
+		try {
+			if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
+				if (!class_exists('JSMinPlus', FALSE)) {
+					require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsminplus.php');
+				}
+
+				$minifiedContent = JSMinPlus::minify($properties['content']);
+
+			} else {
+				if (!class_exists('JSMin', FALSE)) {
+					require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsmin.php');
+				}
+
+				$minifiedContent = JSMin::minify($properties['content']);
 			}
-
-			$minifiedContent = JSMinPlus::minify($properties['content']);
-
-		} else {
-			if (!class_exists('JSMin', FALSE)) {
-				require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsmin.php');
-			}
-
-			$minifiedContent = JSMin::minify($properties['content']);
+		} catch (Exception $exception) {
+			$hasErrors = TRUE;
 		}
 
-		// check result length
-		if (strlen($minifiedContent) > 2 || count(explode(LF, $minifiedContent)) > 50) {
+		// check if the minified content has more than two characters or more than 50 lines and no errors occurred
+		if (!$hasErrors && (strlen($minifiedContent) > 2 || count(explode(LF, $minifiedContent)) > 50)) {
 			$properties['content'] = $minifiedContent . ';';
-
 		} else {
 			$message = 'This javascript file could not be minified: "' . $properties['file'] . '"! ' .
 				'You should exclude it from the minification process!';
