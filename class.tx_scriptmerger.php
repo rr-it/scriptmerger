@@ -675,7 +675,7 @@ class tx_scriptmerger {
 		$head = array();
 		$pattern = '/<head>.+?<\/head>/is';
 		preg_match($pattern, $GLOBALS['TSFE']->content, $head);
-		$head = $head[0];
+		$head = $oldHead = $head[0];
 
 		// parse all available js code inside script tags
 		preg_match_all($searchScriptsPattern, $head, $javascriptTags['head']);
@@ -683,10 +683,7 @@ class tx_scriptmerger {
 		// remove any js code inside the output content
 		if (count($javascriptTags['head'][0])) {
 			$head = preg_replace($searchScriptsPattern, '', $head, count($javascriptTags['head'][0]));
-
-			// replace head with new one
-			$pattern = '/<head>.+?<\/head>/is';
-			$GLOBALS['TSFE']->content = preg_replace($pattern, $head, $GLOBALS['TSFE']->content);
+			$GLOBALS['TSFE']->content = str_replace($oldHead, $head, $GLOBALS['TSFE']->content);
 		}
 
 		// fetch the body content
@@ -694,27 +691,18 @@ class tx_scriptmerger {
 			$body = array();
 			$pattern = '/<body.*>.+?<\/body>/is';
 			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
-			$body = $body[0];
+			$body = $oldBody = $body[0];
 
 			// parse all available js code inside script tags
 			preg_match_all($searchScriptsPattern, $body, $javascriptTags['body']);
 
-			// remove any js code inside the output content
-			// we leave markers in the form ###100### at the original places to write them
-			// back here; it's started by 100
-			if (count($javascriptTags['body'][0])) {
+			// replace any js code inside the output content with markers of the form ###43### at the original
+			// places to write them back later if required
+			$amountOfScriptTags = count($javascriptTags['body'][0]);
+			if ($amountOfScriptTags) {
 				$function = create_function('', 'static $i = 0; return \'###MERGER\' . $i++ . \'MERGER###\';');
-
-				$body = preg_replace_callback(
-					$searchScriptsPattern,
-					$function,
-					$body,
-					count($javascriptTags['body'][0])
-				);
-
-				// replace body with new one
-				$pattern = '/<body.*>.+?<\/body>/is';
-				$GLOBALS['TSFE']->content = preg_replace($pattern, $body, $GLOBALS['TSFE']->content);
+				$body = preg_replace_callback($searchScriptsPattern, $function, $body, $amountOfScriptTags);
+				$GLOBALS['TSFE']->content = str_replace($oldBody, $body, $GLOBALS['TSFE']->content);
 			}
 		}
 
