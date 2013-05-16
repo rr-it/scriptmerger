@@ -56,5 +56,6 @@ plugin.tx_scriptmerger {
 	urlRegularExpressions {
 		#pattern = http://domain.tld((filadmin|typo3temp/).+)
 		#pattern.replacement = http://assets.domain.tld/$1
+		#pattern.useWholeContent = 0
 	}
 }

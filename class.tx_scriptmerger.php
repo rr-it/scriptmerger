@@ -1121,18 +1121,22 @@ class tx_scriptmerger {
 				continue;
 			}
 
-			$userExpression = trim(str_replace('/', '\/', $expression));
-			$expression = '/<(?:img|link|style|script|meta)' .
-				'(?=.+?(?:content|href|src)="(' . $userExpression . ')")[^>]*?>/iU';
-			preg_match_all($expression, $GLOBALS['TSFE']->content, $matches);
-			if (is_array($matches[1])) {
-				foreach ($matches[1] as $match) {
-					if (trim($match) === '') {
-						continue;
-					}
+			if ($expressions[$index . '.']['useWholeContent'] === '1') {
+				$GLOBALS['TSFE']->content = preg_replace($expression, $replacement, $GLOBALS['TSFE']->content);
+			} else {
+				$userExpression = trim(str_replace('/', '\/', $expression));
+				$expression = '/<(?:img|link|style|script|meta)' .
+					'(?=.+?(?:content|href|src)="(' . $userExpression . ')")[^>]*?>/iU';
+				preg_match_all($expression, $GLOBALS['TSFE']->content, $matches);
+				if (is_array($matches[1])) {
+					foreach ($matches[1] as $match) {
+						if (trim($match) === '') {
+							continue;
+						}
 
-					$changedUrl = preg_replace('/' . $userExpression . '/is', $replacement, $match);
-					$GLOBALS['TSFE']->content = str_replace($match, $changedUrl, $GLOBALS['TSFE']->content);
+						$changedUrl = preg_replace('/' . $userExpression . '/is', $replacement, $match);
+						$GLOBALS['TSFE']->content = str_replace($match, $changedUrl, $GLOBALS['TSFE']->content);
+					}
 				}
 			}
 		}
