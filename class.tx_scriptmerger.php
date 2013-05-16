@@ -119,7 +119,7 @@ class tx_scriptmerger {
 	public function contentPostProcOutput() {
 		/** @var $tsfe tslib_fe */
 		$tsfe = $GLOBALS['TSFE'];
-		if (!$tsfe->isINTincScript()) {
+		if (!$tsfe->isINTincScript() || intval(t3lib_div::_GP('disableScriptmerger')) === 1) {
 			return TRUE;
 		}
 
@@ -136,7 +136,7 @@ class tx_scriptmerger {
 	public function contentPostProcAll() {
 		/** @var $tsfe tslib_fe */
 		$tsfe = $GLOBALS['TSFE'];
-		if ($tsfe->isINTincScript()) {
+		if ($tsfe->isINTincScript() || intval(t3lib_div::_GP('disableScriptmerger')) === 1) {
 			return TRUE;
 		}
 
