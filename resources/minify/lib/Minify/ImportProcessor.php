@@ -30,29 +30,38 @@ class Minify_ImportProcessor {
     }
 
     // allows callback funcs to know the current directory
-    private $_currentDir = null;
+    private $_currentDir = NULL;
 
     // allows _importCB to write the fetched content back to the obj
     private $_importedContent = '';
 
-    private static $_isCss = null;
+    private static $_isCss = NULL;
 
     private function __construct($currentDir)
     {
         $this->_currentDir = $currentDir;
     }
 
+// ##################### BEGIN TYPO3 modification
+
+	/**
+	 * @var array
+	 */
+	public static $extensionConfiguration = array();
+
+// ##################### END TYPO3 modification
+
     private function _getContent($file)
     {
 		$file = realpath($file);
         if (! $file
             || in_array($file, self::$filesIncluded)
-            || false === ($content = @file_get_contents($file))
+            || FALSE === ($content = @file_get_contents($file))
         ) {
             // file missing, already included, or failed read
             return '';
         }
-        self::$filesIncluded[] = realpath($file);
+        self::$filesIncluded[] = $file;
         $this->_currentDir = dirname($file);
 
 // ##################### BEGIN TYPO3 modification
@@ -160,6 +169,17 @@ class Minify_ImportProcessor {
                 } while ($changed);
             }
         }
+
+// ##################### BEGIN TYPO3 modification
+
+		if (trim(self::$extensionConfiguration['css.']['postUrlProcessing.']['pattern']) !== '') {
+			$pattern = self::$extensionConfiguration['css.']['postUrlProcessing.']['pattern'];
+			$replacement = self::$extensionConfiguration['css.']['postUrlProcessing.']['replacement'];
+			$url = preg_replace($pattern, $replacement, $url);
+		}
+
+// ##################### END TYPO3 modification
+
         return "url({$quote}{$url}{$quote})";
     }
 }

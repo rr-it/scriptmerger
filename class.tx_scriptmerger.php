@@ -107,6 +107,7 @@ class tx_scriptmerger {
 		}
 
 		$this->prepareExtensionConfiguration();
+		Minify_ImportProcessor::$extensionConfiguration = $this->extConfig;
 	}
 
 	/**

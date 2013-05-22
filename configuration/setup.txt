@@ -25,6 +25,11 @@ plugin.tx_scriptmerger {
 			enable = {$plugin.tx_scriptmerger.css.uniqueCharset.enable}
 			value = {$plugin.tx_scriptmerger.css.uniqueCharset.value}
 		}
+
+		postUrlProcessing {
+			pattern = {$plugin.tx_scriptmerger.css.postUrlProcessing.pattern}
+			replacement = {$plugin.tx_scriptmerger.css.postUrlProcessing.replacement}
+		}
 	}
 
 	javascript {
