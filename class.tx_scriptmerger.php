@@ -1115,8 +1115,8 @@ class tx_scriptmerger {
 				$GLOBALS['TSFE']->content = preg_replace($expression, $replacement, $GLOBALS['TSFE']->content);
 			} else {
 				$userExpression = trim(str_replace('/', '\/', $expression));
-				$expression = '/<(?:img|link|style|script|meta)' .
-					'(?=.+?(?:content|href|src)="(' . $userExpression . ')")[^>]*?>/iU';
+				$expression = '/<(?:img|link|style|script|meta|input)' .
+					'(?=[^>]+?(?:content|href|src)="(' . $userExpression . ')")[^>]*?>/iU';
 				preg_match_all($expression, $GLOBALS['TSFE']->content, $matches);
 				if (is_array($matches[1])) {
 					foreach ($matches[1] as $match) {
