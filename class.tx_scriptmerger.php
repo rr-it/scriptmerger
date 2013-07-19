@@ -988,6 +988,7 @@ class tx_scriptmerger {
 		foreach ($this->css as $relation => $cssByRelation) {
 			$cssByRelation = array_reverse($cssByRelation);
 			foreach ($cssByRelation as $media => $cssByMedia) {
+				$cssByMedia = array_reverse($cssByMedia);
 				foreach ($cssByMedia as $cssProperties) {
 					$file = $cssProperties['file'];
 
