@@ -589,7 +589,7 @@ class tx_scriptmerger {
 				$this->css[$relation][$media][$i]['basename'] = basename($source);
 			} elseif ($source !== '') {
 				// try to fetch the content of the css file
-				$file = ($source{0} === '/' ? substr($source, 1) : $source);
+				$file = $source;
 				if ($GLOBALS['TSFE']->absRefPrefix !== '' && strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
 					$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 				}
