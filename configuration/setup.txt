@@ -1,5 +1,9 @@
-config.compressJs = 0
-config.compressCss = 0
+config {
+	compressJs = 0
+	compressCss = 0
+	#concatenateJs = 0
+	#concatenateCss = 0
+}
 
 plugin.tx_scriptmerger {
 	css {
