@@ -25,18 +25,18 @@
 
 /** Minify: Import Processor */
 $pathToScriptmerger = t3lib_extMgm::extPath('scriptmerger');
-require_once($pathToScriptmerger . 'resources/minify/lib/Minify/ImportProcessor.php');
-require_once($pathToScriptmerger . 'resources/minify/lib/Minify/CSS.php');
-require_once($pathToScriptmerger . 'resources/minify/lib/Minify/CommentPreserver.php');
-require_once($pathToScriptmerger . 'resources/minify/lib/Minify/CSS/Compressor.php');
-require_once($pathToScriptmerger . 'resources/minify/lib/Minify/CSS/UriRewriter.php');
+require_once($pathToScriptmerger . 'Resources/Minify/ImportProcessor.php');
+require_once($pathToScriptmerger . 'Resources/Minify/CSS.php');
+require_once($pathToScriptmerger . 'Resources/Minify/CommentPreserver.php');
+require_once($pathToScriptmerger . 'Resources/Minify/CSS/Compressor.php');
+require_once($pathToScriptmerger . 'Resources/Minify/CSS/UriRewriter.php');
 
 /**
  * This class contains the parsing and replacing functionality of css and javascript files.
  * Furthermore several wrapper methods to the project minify are available to minify, merge
  * and compress such files.
  */
-class tx_scriptmerger {
+class Scriptmerger {
 	/**
 	 * directories for minified, compressed and merged files
 	 *
@@ -918,22 +918,23 @@ class tx_scriptmerger {
 		try {
 			if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJShrink'] === '1') {
 				if (!class_exists('JShrink\Minifier', FALSE)) {
-					require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/JShrink/Minifier.php');
+					require_once(t3lib_extMgm::extPath('scriptmerger') . 'Resources/JShrink/Minifier.php');
 				}
 
 				$minifiedContent = JShrink\Minifier::minify($properties['content']);
 			} elseif (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 				if (!class_exists('JSMinPlus', FALSE)) {
-					require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsminplus.php');
+					require_once(t3lib_extMgm::extPath('scriptmerger') . 'Resources/jsminplus.php');
 				}
 
 				$minifiedContent = JSMinPlus::minify($properties['content']);
 
 			} else {
 				if (!class_exists('JSMin', FALSE)) {
-					require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsmin.php');
+					require_once(t3lib_extMgm::extPath('scriptmerger') . 'Resources/jsmin.php');
 				}
 
+				/** @noinspection PhpUndefinedClassInspection */
 				$minifiedContent = JSMin::minify($properties['content']);
 			}
 		} catch (Exception $exception) {
@@ -1178,12 +1179,6 @@ class tx_scriptmerger {
 
 		return $result;
 	}
-}
-
-if (defined('TYPO3_MODE')
-	&& $GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']
-) {
-	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger.php']);
 }
 
 ?>

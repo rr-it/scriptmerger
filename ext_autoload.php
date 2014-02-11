@@ -5,14 +5,14 @@
 //$extensionPath = t3lib_extMgm::extPath('scriptmerger');
 
 return array(
-//	'minify_importprocessor' => $extensionPath . 'resources/minify/lib/Minify/ImportProcessor.php',
-//	'minify_commentpreserver' => $extensionPath . 'resources/minify/lib/Minify/CommentPreserver.php',
-//	'minify_css' => $extensionPath . 'resources/minify/lib/Minify/CSS.php',
-//	'minify_css_compressor' => $extensionPath . 'resources/minify/lib/Minify/CSS/Compressor.php',
-//	'minify_css_urirewriter' => $extensionPath . 'resources/minify/lib/Minify/CSS/UriRewriter.php',
-//	'jsminplus' => $extensionPath . 'resources/jsminplus.php',
-//	'jsmin' => $extensionPath . 'resources/jsmin.php',
-//	'jshrink\\minifier' => $extensionPath . 'resources/JShrink/Minifier.php',
+//	'minify_importprocessor' => $extensionPath . 'Resources/Minify/ImportProcessor.php',
+//	'minify_commentpreserver' => $extensionPath . 'Resources/Minify/CommentPreserver.php',
+//	'minify_css' => $extensionPath . 'Resources/Minify/CSS.php',
+//	'minify_css_compressor' => $extensionPath . 'Resources/Minify/CSS/Compressor.php',
+//	'minify_css_urirewriter' => $extensionPath . 'Resources/Minify/CSS/UriRewriter.php',
+//	'jsminplus' => $extensionPath . 'Resources/jsminplus.php',
+//	'jsmin' => $extensionPath . 'Resources/jsmin.php',
+//	'jshrink\\minifier' => $extensionPath . 'Resources/JShrink/Minifier.php',
 );
 
 ?>

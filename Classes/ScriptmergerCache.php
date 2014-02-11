@@ -28,7 +28,7 @@
 /**
  * This class contains a hook method for the "clear all cache" action in the TYPO3 backend.
  */
-class tx_scriptmerger_cache {
+class ScriptmergerCache {
 	/**
 	 * Contains the temporary directories of this extension.
 	 *
@@ -54,7 +54,7 @@ class tx_scriptmerger_cache {
 	 * This method deletes all temporary files that are older than one month and
 	 * if the deletion of the whole cache is requested.
 	 *
-	 * @param object $params parameter array
+	 * @param array $params
 	 * @return void
 	 */
 	public function clearCachePostProc(&$params) {
@@ -62,7 +62,7 @@ class tx_scriptmerger_cache {
 			return;
 		}
 
-		$now = time();
+		$now = $GLOBALS['EXEC_TIME'];
 		foreach ($this->tempDirectories as $tempDirectory => $maxAge) {
 			if (!is_dir($tempDirectory)) {
 				continue;
@@ -70,7 +70,6 @@ class tx_scriptmerger_cache {
 
 			$handle = opendir($tempDirectory);
 			while (FALSE !== ($file = readdir($handle))) {
-
 				if ($file === '.' || $file === '..') {
 					continue;
 				}
@@ -87,12 +86,6 @@ class tx_scriptmerger_cache {
 			}
 		}
 	}
-}
-
-if (defined('TYPO3_MODE')
-	&& $GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger_cache.php']
-) {
-	include_once($GLOBALS['TYPO3_CONF_VARS'][TYPO3_MODE]['XCLASS']['ext/scriptmerger/class.tx_scriptmerger_cache.php']);
 }
 
 ?>
