@@ -153,6 +153,10 @@ class Minify_ImportProcessor {
         if ('/' !== $url[0]) {
             if (strpos($url, '//') > 0) {
                 // probably starts with protocol, do not alter
+// ##################### BEGIN TYPO3 modification
+			} elseif (strpos($url, 'data:image') !== FALSE) {
+				// probably starts with an inline image, do not alter
+// ##################### END TYPO3 modification
             } else {
                 // prepend path with current dir separator (OS-independent)
                 $path = $this->_currentDir
