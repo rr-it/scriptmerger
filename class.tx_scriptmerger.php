@@ -1072,6 +1072,23 @@ class tx_scriptmerger {
 						"\t" . $javascriptProperties['content'] . LF .
 						"\t" . '/* ]]> */' . LF .
 						"\t" . '</script>' . LF;
+				} elseif ($this->extConfig['javascript.']['deferLoading'] === '1') {
+					$content = '
+						<script type="text/javascript" defer="defer">
+							function downloadJSAtOnload() {
+								var element = document.createElement("script");
+								element.src = "' . $file . '";
+								document.body.appendChild(element);
+							}
+
+							if (window.addEventListener) {
+								window.addEventListener("load", downloadJSAtOnload, false);
+							} else if (window.attachEvent) {
+								window.attachEvent("onload", downloadJSAtOnload);
+							} else {
+								window.onload = downloadJSAtOnload;
+							}
+					</script>';
 				} else {
 					$content = "\t" .
 						'<script type="text/javascript" src="' . $file . '"></script>' . LF;

@@ -11,13 +11,13 @@ Setup
 Properties
 ^^^^^^^^^^
 
-===================================================== ===================================================================== ======================= ==================
-Property                                              Data type                                                             :ref:`t3tsref:stdwrap`  Default
-===================================================== ===================================================================== ======================= ==================
-urlRegularExpressions.pattern1_                       :ref:`t3tsref:data-type-string`                                       no                      *empty*
-urlRegularExpressions.pattern1.replacement_           :ref:`t3tsref:data-type-string`                                       no                      *empty*
-urlRegularExpressions.pattern1.useWholeContent_       :ref:`t3tsref:data-type-boolean`                                      no                      0
-===================================================== ===================================================================== ======================= ==================
+===================================================== ========================================== ======================= =============================================
+Property                                              Data type                                  :ref:`t3tsref:stdwrap`  Default
+===================================================== ========================================== ======================= =============================================
+urlRegularExpressions.pattern1_                       :ref:`t3tsref:data-type-string`            no                      *empty*
+urlRegularExpressions.pattern1.replacement_           :ref:`t3tsref:data-type-string`            no                      *empty*
+urlRegularExpressions.pattern1.useWholeContent_       :ref:`t3tsref:data-type-boolean`           no                      0
+===================================================== ========================================== ======================= =============================================
 
 Property details
 ^^^^^^^^^^^^^^^^

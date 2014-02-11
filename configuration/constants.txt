@@ -35,6 +35,7 @@ plugin.tx_scriptmerger {
 		addBeforeBody = 0
 		doNotRemoveInDocInBody = 1
 		addContentInDocument = 0
+		deferLoading = 0
 
 		minify {
 			enable = 1

@@ -11,36 +11,37 @@ Constants
 Properties
 ^^^^^^^^^^
 
-===================================================== ===================================================================== ======================= ==================
-Property                                              Data type                                                             :ref:`t3tsref:stdwrap`  Default
-===================================================== ===================================================================== ======================= ==================
-externalFileCacheLifetime_                            :ref:`t3tsref:data-type-integer`                                      no                      3600
-css.enable_                                           :ref:`t3tsref:data-type-boolean`                                      no                      1
-css.addContentInDocument_                             :ref:`t3tsref:data-type-boolean`                                      no                      0
-css.minify.enable_                                    :ref:`t3tsref:data-type-boolean`                                      no                      1
-css.minify.ignore_                                    :ref:`t3tsref:data-type-string`                                       no                      \.min\.
-css.compress.enable_                                  :ref:`t3tsref:data-type-boolean`                                      no                      1
-css.compress.ignore_                                  :ref:`t3tsref:data-type-string`                                       no                      \.gz\.
-css.merge.enable_                                     :ref:`t3tsref:data-type-boolean`                                      no                      1
-css.merge.ignore_                                     :ref:`t3tsref:data-type-string`                                       no                      *empty*
-css.uniqueCharset.enable_                             :ref:`t3tsref:data-type-boolean`                                      no                      1
-css.uniqueCharset.value_                              :ref:`t3tsref:data-type-string`                                       no                      @charset "UTF-8";
-css.postUrlProcessing.pattern_                        :ref:`t3tsref:data-type-string`                                       no                      *empty*
-css.postUrlProcessing.replacement_                    :ref:`t3tsref:data-type-string`                                       no                      *empty*
-javascript.enable_                                    :ref:`t3tsref:data-type-boolean`                                      no                      1
-javascript.addContentInDocument_                      :ref:`t3tsref:data-type-boolean`                                      no                      0
-javascript.parseBody_                                 :ref:`t3tsref:data-type-boolean`                                      no                      0
-javascript.addBeforeBody_                             :ref:`t3tsref:data-type-boolean`                                      no                      0
-javascript.doNotRemoveInDocInBody_                    :ref:`t3tsref:data-type-boolean`                                      no                      1
-javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`                                      no                      1
-javascript.minify.ignore_                             :ref:`t3tsref:data-type-string`                                       no                      \?,\.min\.
-javascript.minify.useJSMinPlus_                       :ref:`t3tsref:data-type-boolean`                                      no                      0
-javascript.minify.useJShrink_                         :ref:`t3tsref:data-type-boolean`                                      no                      1
-javascript.compress.enable_                           :ref:`t3tsref:data-type-boolean`                                      no                      1
-javascript.compress.ignore_                           :ref:`t3tsref:data-type-string`                                       no                      \?,\.gz\.
-javascript.merge.enable_                              :ref:`t3tsref:data-type-boolean`                                      no                      1
-javascript.merge.ignore_                              :ref:`t3tsref:data-type-string`                                       no                      \?
-===================================================== ===================================================================== ======================= ==================
+===================================================== ========================================== ======================= =============================================
+Property                                              Data type                                  :ref:`t3tsref:stdwrap`  Default
+===================================================== ========================================== ======================= =============================================
+externalFileCacheLifetime_                            :ref:`t3tsref:data-type-integer`           no                      3600
+css.enable_                                           :ref:`t3tsref:data-type-boolean`           no                      1
+css.addContentInDocument_                             :ref:`t3tsref:data-type-boolean`           no                      0
+css.minify.enable_                                    :ref:`t3tsref:data-type-boolean`           no                      1
+css.minify.ignore_                                    :ref:`t3tsref:data-type-string`            no                      \.min\.
+css.compress.enable_                                  :ref:`t3tsref:data-type-boolean`           no                      1
+css.compress.ignore_                                  :ref:`t3tsref:data-type-string`            no                      \.gz\.
+css.merge.enable_                                     :ref:`t3tsref:data-type-boolean`           no                      1
+css.merge.ignore_                                     :ref:`t3tsref:data-type-string`            no                      *empty*
+css.uniqueCharset.enable_                             :ref:`t3tsref:data-type-boolean`           no                      1
+css.uniqueCharset.value_                              :ref:`t3tsref:data-type-string`            no                      @charset "UTF-8";
+css.postUrlProcessing.pattern_                        :ref:`t3tsref:data-type-string`            no                      *empty*
+css.postUrlProcessing.replacement_                    :ref:`t3tsref:data-type-string`            no                      *empty*
+javascript.enable_                                    :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.addContentInDocument_                      :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.parseBody_                                 :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.addBeforeBody_                             :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.doNotRemoveInDocInBody_                    :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.deferLoading_                              :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.minify.ignore_                             :ref:`t3tsref:data-type-string`            no                      \?,\.min\.
+javascript.minify.useJSMinPlus_                       :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.minify.useJShrink_                         :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.compress.enable_                           :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.compress.ignore_                           :ref:`t3tsref:data-type-string`            no                      \?,\.gz\.
+javascript.merge.enable_                              :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.merge.ignore_                              :ref:`t3tsref:data-type-string`            no                      \?
+===================================================== ========================================== ======================= =============================================
 
 Property details
 ^^^^^^^^^^^^^^^^
@@ -164,8 +165,8 @@ javascript.minify.useJSMinPlus
 
 Use JSMin+ instead of JSMin or JShrink.
 
-javascript.minify.useJSMinPlus
-""""""""""""""""""""""""""""""
+javascript.minify.useJShrink
+""""""""""""""""""""""""""""
 
 :typoscript:`plugin.tx_scriptmerger.javascript.minify.useJShrink =` :ref:`t3tsref:data-type-boolean`
 
@@ -239,3 +240,10 @@ javascript.doNotRemoveInDocInBody
 
 This option can be used to prevent embedded scripts inside the document of the body section to be merged as this
 is in many cases a possible error source in the final result. Therefore the option is enabled by default.
+
+javascript.deferLoading
+"""""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.javascript.deferLoading=` :ref:`t3tsref:data-type-boolean`
+
+If you want to load your javascript always after the page onload event, then you are encouraged to activate this option.
