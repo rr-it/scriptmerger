@@ -834,6 +834,11 @@ class tx_scriptmerger {
 		// check the age of the cache file (also fails with non-existent file)
 		$content = '';
 		if ((int) @filemtime($cacheFile) <= ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
+			if ($source{0} === '/' && $source{1} === '/') {
+				$protocol = stripos($_SERVER['SERVER_PROTOCOL'], 'https') === TRUE ? 'https:' : 'http:';
+				$source = $protocol . $source;
+			}
+
 			$content = t3lib_div::getURL($source);
 			if ($content !== FALSE) {
 				t3lib_div::writeFile($cacheFile, $content);
