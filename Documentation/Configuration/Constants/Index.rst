@@ -34,7 +34,8 @@ javascript.addBeforeBody_                             :ref:`t3tsref:data-type-bo
 javascript.doNotRemoveInDocInBody_                    :ref:`t3tsref:data-type-boolean`                                      no                      1
 javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`                                      no                      1
 javascript.minify.ignore_                             :ref:`t3tsref:data-type-string`                                       no                      \?,\.min\.
-javascript.minify.useJSMinPlus_                       :ref:`t3tsref:data-type-boolean`                                      no                      1
+javascript.minify.useJSMinPlus_                       :ref:`t3tsref:data-type-boolean`                                      no                      0
+javascript.minify.useJShrink_                         :ref:`t3tsref:data-type-boolean`                                      no                      1
 javascript.compress.enable_                           :ref:`t3tsref:data-type-boolean`                                      no                      1
 javascript.compress.ignore_                           :ref:`t3tsref:data-type-string`                                       no                      \?,\.gz\.
 javascript.merge.enable_                              :ref:`t3tsref:data-type-boolean`                                      no                      1
@@ -161,7 +162,14 @@ javascript.minify.useJSMinPlus
 
 :typoscript:`plugin.tx_scriptmerger.javascript.minify.useJSMinPlus =` :ref:`t3tsref:data-type-boolean`
 
-Use JSMin+ instead of JSMin
+Use JSMin+ instead of JSMin or JShrink.
+
+javascript.minify.useJSMinPlus
+""""""""""""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.javascript.minify.useJShrink =` :ref:`t3tsref:data-type-boolean`
+
+Use JShrink instead of JSMin or JSMin+.
 
 javascript.compress.enable
 """"""""""""""""""""""""""

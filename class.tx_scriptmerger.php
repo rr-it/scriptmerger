@@ -911,7 +911,13 @@ class tx_scriptmerger {
 		$hasErrors = FALSE;
 		$minifiedContent = '';
 		try {
-			if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
+			if (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJShrink'] === '1') {
+				if (!class_exists('JShrink\Minifier', FALSE)) {
+					require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/JShrink/Minifier.php');
+				}
+
+				$minifiedContent = JShrink\Minifier::minify($properties['content']);
+			} elseif (!$hasConditionalCompilation && $this->extConfig['javascript.']['minify.']['useJSMinPlus'] === '1') {
 				if (!class_exists('JSMinPlus', FALSE)) {
 					require_once(t3lib_extMgm::extPath('scriptmerger') . 'resources/jsminplus.php');
 				}

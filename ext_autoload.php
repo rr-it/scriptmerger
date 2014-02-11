@@ -12,6 +12,7 @@ return array(
 //	'minify_css_urirewriter' => $extensionPath . 'resources/minify/lib/Minify/CSS/UriRewriter.php',
 //	'jsminplus' => $extensionPath . 'resources/jsminplus.php',
 //	'jsmin' => $extensionPath . 'resources/jsmin.php',
+//	'jshrink\\minifier' => $extensionPath . 'resources/JShrink/Minifier.php',
 );
 
 ?>

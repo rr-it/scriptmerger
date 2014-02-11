@@ -24,7 +24,7 @@ plugin.tx_scriptmerger {
 			enable = {$plugin.tx_scriptmerger.css.merge.enable}
 			ignore = {$plugin.tx_scriptmerger.css.merge.ignore}
 		}
-		
+
 		uniqueCharset {
 			enable = {$plugin.tx_scriptmerger.css.uniqueCharset.enable}
 			value = {$plugin.tx_scriptmerger.css.uniqueCharset.value}
@@ -46,6 +46,7 @@ plugin.tx_scriptmerger {
 		minify {
 			enable = {$plugin.tx_scriptmerger.javascript.minify.enable}
 			useJSMinPlus = {$plugin.tx_scriptmerger.javascript.minify.useJSMinPlus}
+			useJShrink = {$plugin.tx_scriptmerger.javascript.minify.useJShrink}
 			ignore = {$plugin.tx_scriptmerger.javascript.minify.ignore}
 		}
 
