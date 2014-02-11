@@ -1,4 +1,5 @@
 <?php
+
 /***************************************************************
  *  Copyright notice
  *
@@ -28,7 +29,7 @@
 /**
  * This class contains a hook method for the "clear all cache" action in the TYPO3 backend.
  */
-class ScriptmergerCache {
+class ScriptmergerCacheHook {
 	/**
 	 * Contains the temporary directories of this extension.
 	 *
