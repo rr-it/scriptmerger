@@ -40,6 +40,11 @@ Known Problems And Hints
 - You can disable the scriptmerger for the request by an URL parameter. Just add the following to your query string:
   “?no\_cache=1&disableScriptmerger=1”.
 
+- If you want to post-process the written files, because you want to push them to a CDN or something like that, you
+  can use the proviced internal hook. Just register some class in your ext_localconf.php into this array
+  $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['scriptmerger']['writeFilePostHook'] and add the method "writeFilePostHook"
+  inside this class with the required logic.
+
 Your problem isn't listed here and you still experience problems with your minified, compressed and/or concatenated
 contents? Then please report your issue at the project tracker
 on `forge <http://forge.typo3.org/projects/extension-scriptmerger/issues>`_.

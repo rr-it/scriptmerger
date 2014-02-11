@@ -307,7 +307,7 @@ class tx_scriptmerger {
 					// write merged file in any case
 					$newFile = $this->tempDirectories['merged'] . $properties['basename'] . '.css';
 					if (!file_exists($newFile)) {
-						t3lib_div::writeFile($newFile, $properties['content']);
+						$this->writeFile($newFile, $properties['content']);
 					}
 
 					// file should be compressed
@@ -417,7 +417,7 @@ class tx_scriptmerger {
 				// write merged file in any case
 				$newFile = $this->tempDirectories['merged'] . $properties['basename'] . '.js';
 				if (!file_exists($newFile)) {
-					t3lib_div::writeFile($newFile, $properties['content']);
+					$this->writeFile($newFile, $properties['content']);
 				}
 
 				// file should be compressed
@@ -578,7 +578,7 @@ class tx_scriptmerger {
 				$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
 				$tempFile = $source . '.css';
 				if (!file_exists($source . '.css')) {
-					t3lib_div::writeFile($tempFile, $cssContent[1][0]);
+					$this->writeFile($tempFile, $cssContent[1][0]);
 				}
 
 				// try to resolve any @import occurrences
@@ -797,7 +797,7 @@ class tx_scriptmerger {
 					$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
 
 					if (!file_exists($source . '.js')) {
-						t3lib_div::writeFile($source . '.js', $javascriptContent[1][0]);
+						$this->writeFile($source . '.js', $javascriptContent[1][0]);
 					}
 
 					// try to resolve any @import occurrences
@@ -841,7 +841,7 @@ class tx_scriptmerger {
 
 			$content = t3lib_div::getURL($source);
 			if ($content !== FALSE) {
-				t3lib_div::writeFile($cacheFile, $content);
+				$this->writeFile($cacheFile, $content);
 			} else {
 				$cacheFile = '';
 			}
@@ -881,7 +881,7 @@ class tx_scriptmerger {
 		$properties['content'] = Minify_CSS::minify($properties['content']);
 
 		// save content inside the new file
-		t3lib_div::writeFile($newFile, $properties['content']);
+		$this->writeFile($newFile, $properties['content']);
 
 		// save new part of the base name
 		$properties['basename'] .= '.min';
@@ -949,7 +949,7 @@ class tx_scriptmerger {
 			t3lib_div::sysLog($message, 'scriptmerger', t3lib_div::SYSLOG_SEVERITY_ERROR);
 		}
 
-		t3lib_div::writeFile($newFile, $properties['content']);
+		$this->writeFile($newFile, $properties['content']);
 		$properties['basename'] .= '.min';
 
 		return $newFile;
@@ -967,7 +967,7 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		t3lib_div::writeFile($newFile, gzencode($properties['content'], 5));
+		$this->writeFile($newFile, gzencode($properties['content'], 5));
 
 		return $newFile;
 	}
@@ -984,7 +984,7 @@ class tx_scriptmerger {
 			return $newFile;
 		}
 
-		t3lib_div::writeFile($newFile, gzencode($properties['content'], 5));
+		$this->writeFile($newFile, gzencode($properties['content'], 5));
 
 		return $newFile;
 	}
@@ -1158,6 +1158,25 @@ class tx_scriptmerger {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Writes $content to the file $file
+	 *
+	 * @param string $file file path to write to
+	 * @param string $content Content to write
+	 * @return boolean TRUE if the file was successfully opened and written to.
+	 */
+	protected function writeFile($file, $content) {
+		$result = t3lib_div::writeFile($file, $content);
+
+		// hook here for other file system operations like syncing to other servers etc.
+		foreach ($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['scriptmerger']['writeFilePostHook'] as $classReference) {
+			$hookObject = t3lib_div::getUserObj($classReference);
+			$hookObject->writeFilePostHook($file, $content, $this);
+		}
+
+		return $result;
 	}
 }
 
