@@ -197,47 +197,47 @@ class ScriptmergerCss extends ScriptmergerBase {
 			'(?=.+?(?:href="(.*?)"|>))' . // and the href attribute
 			'(?=.+?(?:rel="(.*?)"|>))' . // and the rel attribute
 			'(?=.+?(?:title="(.*?)"|>))' . // and the title attribute of the tag.
+			'(?=.+?(?:data-ignore="(.*?)"|>))' . // and the data-ignore attribute of the tag.
 			'(?:[^>]+?\.css[^>]+?\/?>' . // Continue parsing from \1 to the closing tag.
 			'|le[^>]*?>[^>]+?<\/style>)\s*' .
 			'/is';
 
 		preg_match_all($pattern, $GLOBALS['TSFE']->content, $cssTags);
-		if (!count($cssTags[0])) {
+		$amountOfResults = count($cssTags[0]);
+		if (!$amountOfResults) {
 			return;
 		}
 
-		// remove any css code inside the output content
-		$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content, count($cssTags[0]));
+		$function = create_function('', 'static $i = 0; return \'###MERGER\' . $i++ . \'MERGER###\';');
+		$GLOBALS['TSFE']->content = preg_replace_callback(
+			$pattern, $function, $GLOBALS['TSFE']->content, $amountOfResults
+		);
 
-		// parse matches
-		$amountOfResults = count($cssTags[0]);
 		for ($i = 0; $i < $amountOfResults; ++$i) {
 			$content = '';
 
-			// get media attribute (all as default if it's empty)
 			$media = (trim($cssTags[2][$i]) === '') ? 'all' : $cssTags[2][$i];
 			$media = implode(',', array_map('trim', explode(',', $media)));
 
-			// get rel attribute (stylesheet as default if it's empty)
 			$relation = (trim($cssTags[4][$i]) === '') ? 'stylesheet' : $cssTags[4][$i];
-
-			// get source attribute
 			$source = $cssTags[3][$i];
-
-			// get title attribute
 			$title = trim($cssTags[5][$i]);
+			$ignoreDataFlagSet = intval($cssTags[6][$i]);
 
 			// add basic entry
 			$this->css[$relation][$media][$i]['minify-ignore'] = FALSE;
 			$this->css[$relation][$media][$i]['compress-ignore'] = FALSE;
 			$this->css[$relation][$media][$i]['merge-ignore'] = FALSE;
+			$this->css[$relation][$media][$i]['addInDocument'] = FALSE;
+			$this->css[$relation][$media][$i]['useOriginalCodeLine'] = FALSE;
 			$this->css[$relation][$media][$i]['file'] = $source;
 			$this->css[$relation][$media][$i]['content'] = '';
 			$this->css[$relation][$media][$i]['basename'] = '';
 			$this->css[$relation][$media][$i]['title'] = $title;
+			$this->css[$relation][$media][$i]['position-key'] = $i;
+			$this->css[$relation][$media][$i]['original'] = $cssTags[0][$i];
 
-			// styles which are added inside the document must be parsed again
-			// to fetch the pure css code
+			// styles which are added inside the document must be parsed again to fetch the pure css code
 			$cssTags[1][$i] = ($cssTags[1][$i] === 'sty' ? 'style' : $cssTags[1][$i]);
 			if ($cssTags[1][$i] === 'style') {
 				$cssContent = array();
@@ -246,6 +246,17 @@ class ScriptmergerCss extends ScriptmergerBase {
 				// we doesn't need to continue if it was an empty style tag
 				if ($cssContent[1][0] === '') {
 					unset($this->css[$relation][$media][$i]);
+					continue;
+				}
+
+				// ignore this file if the content could not be fetched
+				if ($ignoreDataFlagSet) {
+					$this->css[$relation][$media][$i]['minify-ignore'] = TRUE;
+					$this->css[$relation][$media][$i]['compress-ignore'] = TRUE;
+					$this->css[$relation][$media][$i]['merge-ignore'] = TRUE;
+					$this->css[$relation][$media][$i]['addInDocument'] = TRUE;
+					$this->css[$relation][$media][$i]['useOriginalCodeLine'] = TRUE;
+					$this->css[$relation][$media][$i]['content'] = $cssContent[1][0];
 					continue;
 				}
 
@@ -277,30 +288,39 @@ class ScriptmergerCss extends ScriptmergerBase {
 				}
 
 				// ignore this file if the content could not be fetched
-				if ($content == '') {
+				if ($content === '' || $ignoreDataFlagSet) {
 					$this->css[$relation][$media][$i]['minify-ignore'] = TRUE;
 					$this->css[$relation][$media][$i]['compress-ignore'] = TRUE;
 					$this->css[$relation][$media][$i]['merge-ignore'] = TRUE;
+					$this->css[$relation][$media][$i]['useOriginalCodeLine'] = TRUE;
 					continue;
 				}
 
 				// check if the file should be ignored for some processes
+				$ignoreAmount = 0;
 				if ($this->configuration['css.']['minify.']['ignore'] !== '') {
 					if (preg_match($this->configuration['css.']['minify.']['ignore'], $source)) {
 						$this->css[$relation][$media][$i]['minify-ignore'] = TRUE;
+						++$ignoreAmount;
 					}
 				}
 
 				if ($this->configuration['css.']['compress.']['ignore'] !== '') {
 					if (preg_match($this->configuration['css.']['compress.']['ignore'], $source)) {
 						$this->css[$relation][$media][$i]['compress-ignore'] = TRUE;
+						++$ignoreAmount;
 					}
 				}
 
 				if ($this->configuration['css.']['merge.']['ignore'] !== '') {
 					if (preg_match($this->configuration['css.']['merge.']['ignore'], $source)) {
 						$this->css[$relation][$media][$i]['merge-ignore'] = TRUE;
+						++$ignoreAmount;
 					}
+				}
+
+				if ($ignoreAmount === 3) {
+					$this->css[$relation][$media][$i]['useOriginalCodeLine'] = TRUE;
 				}
 
 				// set the css file with it's content
@@ -372,21 +392,15 @@ class ScriptmergerCss extends ScriptmergerBase {
 	 */
 	protected function writeToDocument() {
 		// write all files back to the document
+		$contentShouldBeAddedInline = $this->configuration['css.']['addContentInDocument'] === '1';
 		foreach ($this->css as $relation => $cssByRelation) {
 			$cssByRelation = array_reverse($cssByRelation);
 			foreach ($cssByRelation as $media => $cssByMedia) {
 				$cssByMedia = array_reverse($cssByMedia);
 				foreach ($cssByMedia as $cssProperties) {
-					$file = $cssProperties['file'];
-
-					// normal file or http link?
-					if (file_exists($file)) {
-						$file = $GLOBALS['TSFE']->absRefPrefix .
-							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
-					}
-
-					// build css script link or add the content directly into the document
-					if ($this->configuration['css.']['addContentInDocument'] === '1') {
+					if ($cssProperties['useOriginalCodeLine']) {
+						$content = $cssProperties['original'];
+					} elseif ($cssProperties['addInDocument'] || $contentShouldBeAddedInline) {
 						$content = LF . "\t" .
 							'<style media="' . $media . '" type="text/css">' . LF .
 							"\t" . '/* <![CDATA[ */' . LF .
@@ -394,22 +408,40 @@ class ScriptmergerCss extends ScriptmergerBase {
 							"\t" . '/* ]]> */' . LF .
 							"\t" . '</style>' . LF;
 					} else {
+						$file = $cssProperties['file'];
+						if (file_exists($file)) {
+							$file = $GLOBALS['TSFE']->absRefPrefix .
+								(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
+						}
+
 						$title = (trim($cssProperties['title']) !== '' ?
 							'title="' . $cssProperties['title'] . '"' : '');
 						$content = LF . "\t" . '<link rel="' . $relation . '" type="text/css" ' .
 							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . LF;
 					}
 
-					// add content right after the opening head tag
-					$GLOBALS['TSFE']->content = preg_replace(
-						'/<(?:\/base|base|meta name="generator"|link|\/title|\/head).*?>/is',
-						'\0' . $content,
-						$GLOBALS['TSFE']->content,
-						1
-					);
+					if ($cssProperties['merge-ignore']) {
+						$GLOBALS['TSFE']->content = str_replace(
+							'###MERGER' . $cssProperties['position-key'] . 'MERGER###',
+							$content,
+							$GLOBALS['TSFE']->content
+						);
+						continue;
+					} else {
+						$GLOBALS['TSFE']->content = preg_replace(
+							'/<(?:\/base|base|meta name="generator"|link|\/title|\/head).*?>/is',
+							'\0' . $content,
+							$GLOBALS['TSFE']->content,
+							1
+						);
+					}
 				}
 			}
 		}
+
+		// remove any empty markers
+		$pattern = '/###MERGER[0-9]*?MERGER###/is';
+		$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
 	}
 }
 

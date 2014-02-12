@@ -82,6 +82,7 @@ css.minify.ignore
 
 A comma-separated list of files which should be ignored from the minification process.
 Be careful, because you need to quote the characters yourself as the entries are considered as regular expressions.
+If a file is added to all three ignore options, it's not touched at all.
 
 css.compress.enable
 """""""""""""""""""
@@ -97,6 +98,7 @@ css.compress.ignore
 
 A comma-separated list of files which should be ignored from the compression process.
 Be careful, because you need to quote the characters yourself as the entries are considered as regular expressions.
+If a file is added to all three ignore options, it's not touched at all.
 
 css.merge.enable
 """"""""""""""""
@@ -112,6 +114,8 @@ css.merge.ignore
 
 A comma-separated list of files which should be ignored from the merging process.
 Be careful, because you need to quote the characters yourself as the entries are considered as regular expressions.
+If a file is added to all three ignore options, it's not touched at all. Also this setting will trigger the
+process to readd the file at the same position it was taken from.
 
 css.uniqueCharset.enable
 """"""""""""""""""""""""
@@ -157,6 +161,7 @@ javascript.minify.ignore
 
 A comma-separated list of files which should be ignored from the minification process.
 Be careful, because you need to quote the characters yourself as the entries are considered as regular expressions.
+If a file is added to all three ignore options, it's not touched at all.
 
 javascript.minify.useJSMinPlus
 """"""""""""""""""""""""""""""
@@ -177,7 +182,7 @@ javascript.compress.enable
 
 :typoscript:`plugin.tx_scriptmerger.javascript.compress.enable =` :ref:`t3tsref:data-type-boolean`
 
-Enable the compression process
+Enable the compression process.
 
 javascript.compress.ignore
 """"""""""""""""""""""""""
@@ -186,6 +191,7 @@ javascript.compress.ignore
 
 A comma-separated list of files which should be ignored from the compression process.
 Be careful, because you need to quote the characters yourself as the entries are considered as regular expressions.
+If a file is added to all three ignore options, it's not touched at all.
 
 javascript.merge.enable
 """""""""""""""""""""""
@@ -201,6 +207,8 @@ javascript.merge.ignore
 
 A comma-separated list of files which should be ignored from the merging process.
 Be careful, because you need to quote the characters yourself as the entries are considered as regular expressions.
+If a file is added to all three ignore options, it's not touched at all. Also this setting will trigger the
+process to readd the file at the same position it was taken from.
 
 javascript.enable
 """""""""""""""""
@@ -247,3 +255,8 @@ javascript.deferLoading
 :typoscript:`plugin.tx_scriptmerger.javascript.deferLoading=` :ref:`t3tsref:data-type-boolean`
 
 If you want to load your javascript always after the page onload event, then you are encouraged to activate this option.
+
+Additional Information
+^^^^^^^^^^^^^^^^^^^^^^
+
+You can ignore any script or stylesheet by adding the data-ignore attribute with the value 1 to their tag.

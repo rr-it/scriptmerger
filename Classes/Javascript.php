@@ -151,6 +151,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		$searchScriptsPattern = '/' .
 			'<script' . // This expression includes any script nodes.
 			'(?=.+?(?:src="(.*?)"|>))' . // It fetches the src attribute.
+			'(?=.+?(?:data-ignore="(.*?)"|>))' . // and the data-ignore attribute of the tag.
 			'[^>]*?>' . // Finally we finish the parsing of the opening tag
 			'.*?<\/script>\s*' . // until the closing tag.
 			'/is';
@@ -166,42 +167,34 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			'\s*<\/script>' . // and closing script tag
 			'/is';
 
-		// fetch the head content
+		// parse scripts in the head
 		$head = array();
-		$pattern = '/<head>.+?<\/head>/is';
-		preg_match($pattern, $GLOBALS['TSFE']->content, $head);
+		preg_match('/<head>.+?<\/head>/is', $GLOBALS['TSFE']->content, $head);
 		$head = $oldHead = $head[0];
 
-		// parse all available js code inside script tags
 		preg_match_all($searchScriptsPattern, $head, $javascriptTags['head']);
-
-		// remove any js code inside the output content
-		if (count($javascriptTags['head'][0])) {
-			$head = preg_replace($searchScriptsPattern, '', $head, count($javascriptTags['head'][0]));
+		$amountOfScriptTags = count($javascriptTags['head'][0]);
+		if ($amountOfScriptTags) {
+			$function = create_function('', 'static $i = 0; return \'###MERGER-head\' . $i++ . \'MERGER###\';');
+			$head = preg_replace_callback($searchScriptsPattern, $function, $head, $amountOfScriptTags);
 			$GLOBALS['TSFE']->content = str_replace($oldHead, $head, $GLOBALS['TSFE']->content);
 		}
 
-		// fetch the body content
+		// parse scripts in the body
 		if ($this->configuration['javascript.']['parseBody'] === '1') {
 			$body = array();
-			$pattern = '/<body.*>.+?<\/body>/is';
-			preg_match($pattern, $GLOBALS['TSFE']->content, $body);
+			preg_match('/<body.*>.+?<\/body>/is', $GLOBALS['TSFE']->content, $body);
 			$body = $oldBody = $body[0];
 
-			// parse all available js code inside script tags
 			preg_match_all($searchScriptsPattern, $body, $javascriptTags['body']);
-
-			// replace any js code inside the output content with markers of the form ###43### at the original
-			// places to write them back later if required
 			$amountOfScriptTags = count($javascriptTags['body'][0]);
 			if ($amountOfScriptTags) {
-				$function = create_function('', 'static $i = 0; return \'###MERGER\' . $i++ . \'MERGER###\';');
+				$function = create_function('', 'static $i = 0; return \'###MERGER-body\' . $i++ . \'MERGER###\';');
 				$body = preg_replace_callback($searchScriptsPattern, $function, $body, $amountOfScriptTags);
 				$GLOBALS['TSFE']->content = str_replace($oldBody, $body, $GLOBALS['TSFE']->content);
 			}
 		}
 
-		// parse matches
 		foreach ($javascriptTags as $section => $results) {
 			$amountOfResults = count($results[0]);
 			for ($i = 0; $i < $amountOfResults; ++$i) {
@@ -212,15 +205,19 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					preg_match('/^<script([^>]*)>/', trim($results[0][$i]), $scriptAttribute);
 					$isSourceFromMainAttribute = (strpos($scriptAttribute[1], $source) !== FALSE);
 				}
+				$ignoreDataFlagSet = intval($results[2][$i]);
 
 				// add basic entry
 				$this->javascript[$section][$i]['minify-ignore'] = FALSE;
 				$this->javascript[$section][$i]['compress-ignore'] = FALSE;
 				$this->javascript[$section][$i]['merge-ignore'] = FALSE;
+				$this->javascript[$section][$i]['addInDocument'] = FALSE;
+				$this->javascript[$section][$i]['useOriginalCodeLine'] = FALSE;
 				$this->javascript[$section][$i]['file'] = $source;
 				$this->javascript[$section][$i]['content'] = '';
 				$this->javascript[$section][$i]['basename'] = '';
-				$this->javascript[$section][$i]['addInDocument'] = FALSE;
+				$this->javascript[$section][$i]['position-key'] = $i;
+				$this->javascript[$section][$i]['original'] = $results[0][$i];
 
 				if ($isSourceFromMainAttribute) {
 					// try to fetch the content of the css file
@@ -237,30 +234,39 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					}
 
 					// ignore this file if the content could not be fetched
-					if (trim($content) === '') {
+					if (trim($content) === '' || $ignoreDataFlagSet) {
 						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
 						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
 						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
+						$this->javascript[$section][$i]['useOriginalCodeLine'] = TRUE;
 						continue;
 					}
 
 					// check if the file should be ignored for some processes
+					$amountOfIgnores = 0;
 					if ($this->configuration['javascript.']['minify.']['ignore'] !== '' &&
 						preg_match($this->configuration['javascript.']['minify.']['ignore'], $source)
 					) {
 						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
+						++$amountOfIgnores;
 					}
 
 					if ($this->configuration['javascript.']['compress.']['ignore'] !== '' &&
 						preg_match($this->configuration['javascript.']['compress.']['ignore'], $source)
 					) {
 						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
+						++$amountOfIgnores;
 					}
 
 					if ($this->configuration['javascript.']['merge.']['ignore'] !== '' &&
 						preg_match($this->configuration['javascript.']['merge.']['ignore'], $source)
 					) {
 						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
+						++$amountOfIgnores;
+					}
+
+					if ($amountOfIgnores === 3) {
+						$this->javascript[$section][$i]['useOriginalCodeLine'] = TRUE;
 					}
 
 					// set the javascript file with it's content
@@ -275,14 +281,26 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 						substr($filename, 0, strrpos($filename, '.')) . '-' . $hash;
 
 				} else {
-					// styles which are added inside the document must be parsed again
+					// scripts which are added inside the document must be parsed again
 					// to fetch the pure js code
 					$javascriptContent = array();
 					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
 
-					// we doesn't need to continue if it was an empty style tag
+					// we doesn't need to continue if it was an empty script tag
 					if ($javascriptContent[1][0] === '') {
 						unset($this->javascript[$section][$i]);
+						continue;
+					}
+
+					$doNotRemoveinDocInBody =
+						($this->configuration['javascript.']['doNotRemoveInDocInBody'] === '1' && $section === 'body');
+					if ($doNotRemoveinDocInBody || $ignoreDataFlagSet) {
+						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
+						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
+						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
+						$this->javascript[$section][$i]['useOriginalCodeLine'] = TRUE;
+						$this->javascript[$section][$i]['addInDocument'] = TRUE;
+						$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
 						continue;
 					}
 
@@ -294,18 +312,9 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 						$this->writeFile($source . '.js', $javascriptContent[1][0]);
 					}
 
-					// try to resolve any @import occurrences
 					$this->javascript[$section][$i]['file'] = $source . '.js';
 					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
 					$this->javascript[$section][$i]['basename'] = basename($source);
-
-					// inDocument styles of the body shouldn't be removed from their position
-					if ($this->configuration['javascript.']['doNotRemoveInDocInBody'] === '1' && $section === 'body') {
-						$this->javascript[$section][$i]['minify-ignore'] = FALSE;
-						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
-						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
-						$this->javascript[$section][$i]['addInDocument'] = TRUE;
-					}
 				}
 			}
 		}
@@ -401,7 +410,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 	 * @return void
 	 */
 	protected function writeToDocument() {
-		// write all files back to the document
+		$shouldBeAddedInDoc = $this->configuration['javascript.']['addContentInDocument'] === '1';
 		foreach ($this->javascript as $section => $javascriptBySection) {
 			ksort($javascriptBySection);
 			if (!is_array($javascriptBySection)) {
@@ -417,68 +426,63 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				$javascriptBySection = array_reverse($javascriptBySection);
 			}
 
-			foreach ($javascriptBySection as $index => $javascriptProperties) {
-				$file = $javascriptProperties['file'];
-
-				// normal file or http link?
-				if (file_exists($file)) {
-					$file = $GLOBALS['TSFE']->absRefPrefix .
-						(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
-				}
-
-				// build javascript script link or add the content directly into the document
-				if ($javascriptProperties['addInDocument'] ||
-					$this->configuration['javascript.']['addContentInDocument'] === '1'
-				) {
+			foreach ($javascriptBySection as $javascriptProperties) {
+				if ($javascriptProperties['useOriginalCodeLine']) {
+					$content = $javascriptProperties['original'];
+				} elseif ($javascriptProperties['addInDocument'] || $shouldBeAddedInDoc) {
 					$content = "\t" .
 						'<script type="text/javascript">' . LF .
 						"\t" . '/* <![CDATA[ */' . LF .
 						"\t" . $javascriptProperties['content'] . LF .
 						"\t" . '/* ]]> */' . LF .
 						"\t" . '</script>' . LF;
-				} elseif ($this->configuration['javascript.']['deferLoading'] === '1') {
-					$content = '
-						<script type="text/javascript" defer="defer">
-							function downloadJSAtOnload() {
-								var element = document.createElement("script");
-								element.src = "' . $file . '";
-								document.body.appendChild(element);
-							}
-
-							if (window.addEventListener) {
-								window.addEventListener("load", downloadJSAtOnload, false);
-							} else if (window.attachEvent) {
-								window.attachEvent("onload", downloadJSAtOnload);
-							} else {
-								window.onload = downloadJSAtOnload;
-							}
-					</script>';
 				} else {
-					$content = "\t" .
-						'<script type="text/javascript" src="' . $file . '"></script>' . LF;
+					$file = $javascriptProperties['file'];
+					if (file_exists($file)) {
+						$file = $GLOBALS['TSFE']->absRefPrefix .
+							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
+					}
+
+					if ($this->configuration['javascript.']['deferLoading'] === '1') {
+						$content = '
+	<script type="text/javascript" defer="defer">
+		function downloadJSAtOnload() {
+			var element = document.createElement("script");
+			element.src = "' . $file . '";
+			document.body.appendChild(element);
+		}
+
+		if (window.addEventListener) {
+			window.addEventListener("load", downloadJSAtOnload, false);
+		} else if (window.attachEvent) {
+			window.attachEvent("onload", downloadJSAtOnload);
+		} else {
+			window.onload = downloadJSAtOnload;
+		}
+</script>';
+					} else {
+						$content = "\t" .
+							'<script type="text/javascript" src="' . $file . '"></script>' . LF;
+					}
 				}
 
-				// add body scripts back to their original place if they were ignored
-				if ($section === 'body' && $javascriptProperties['merge-ignore']) {
+				if ($javascriptProperties['merge-ignore']) {
+					// add body scripts back to their original place if they were ignored
 					$GLOBALS['TSFE']->content = str_replace(
-						'###MERGER' . $index . 'MERGER###',
+						'###MERGER-' . $section . $javascriptProperties['position-key'] . 'MERGER###',
 						$content,
 						$GLOBALS['TSFE']->content
 					);
-					continue;
+				} else {
+					$replacement = ($addToBody ? $content . '\0' : '\0' . $content);
+					$GLOBALS['TSFE']->content = preg_replace($pattern, $replacement, $GLOBALS['TSFE']->content, 1);
 				}
-
-				// add content right after the opening head tag or inside the body
-				$replacement = ($addToBody ? $content . '\0' : '\0' . $content);
-				$GLOBALS['TSFE']->content = preg_replace($pattern, $replacement, $GLOBALS['TSFE']->content, 1);
 			}
 		}
 
-		// remove all empty body markers
-		if ($this->configuration['javascript.']['parseBody'] === '1') {
-			$pattern = '/###MERGER[0-9]*?MERGER###/is';
-			$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
-		}
+		// remove any empty markers
+		$pattern = '/###MERGER-(head|body)[0-9]*?MERGER###/is';
+		$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
 	}
 }
 
