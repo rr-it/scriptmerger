@@ -18,6 +18,7 @@ externalFileCacheLifetime_                            :ref:`t3tsref:data-type-in
 css.enable_                                           :ref:`t3tsref:data-type-boolean`           no                      1
 css.addContentInDocument_                             :ref:`t3tsref:data-type-boolean`           no                      0
 css.doNotRemoveInDoc_                                 :ref:`t3tsref:data-type-boolean`           no                      0
+css.mergedFilePosition_                               :ref:`t3tsref:data-type-string`            no                      </head>
 css.minify.enable_                                    :ref:`t3tsref:data-type-boolean`           no                      1
 css.minify.ignore_                                    :ref:`t3tsref:data-type-string`            no                      \.min\.
 css.compress.enable_                                  :ref:`t3tsref:data-type-boolean`           no                      1
@@ -31,9 +32,10 @@ css.postUrlProcessing.replacement_                    :ref:`t3tsref:data-type-st
 javascript.enable_                                    :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.addContentInDocument_                      :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.parseBody_                                 :ref:`t3tsref:data-type-boolean`           no                      0
-javascript.addBeforeBody_                             :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.doNotRemoveInDocInBody_                    :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.doNotRemoveInDocInHead_                    :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.mergedHeadFilePosition_                    :ref:`t3tsref:data-type-string`            no                      </head>
+javascript.mergedBodyFilePosition_                    :ref:`t3tsref:data-type-string`            no                      </body>
 javascript.deferLoading_                              :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.minify.ignore_                             :ref:`t3tsref:data-type-string`            no                      \?,\.min\.
@@ -76,6 +78,14 @@ css.doNotRemoveInDoc
 :typoscript:`plugin.tx_scriptmerger.css.doNotRemoveInDoc=` :ref:`t3tsref:data-type-boolean`
 
 This option can be used to prevent embedded scripts to be merged, minified or compressed.
+
+css.mergedFilePosition
+""""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.css.mergedFilePosition=` :ref:`t3tsref:data-type-string`
+
+Use this option to define the final position of the merged files and any other ones that were processed by
+the scriptmerger. The value is used inside a regular expression, but you cannot use any wildcards or such stuff.
 
 css.minify.enable
 """""""""""""""""
@@ -242,14 +252,6 @@ javascript.parseBody
 Enable this option to enable the minification, processing and merging processes for the body section.
 The resulting files are always included directly before the closing body tag.
 
-javascript.addBeforeBody
-""""""""""""""""""""""""
-
-:typoscript:`plugin.tx_scriptmerger.javascript.addBeforeBody=` :ref:`t3tsref:data-type-boolean`
-
-Add the javascript files of the head section directly before the closing body tag. Be careful with this option as
-it can cause harm to your site!
-
 javascript.doNotRemoveInDocInBody
 """""""""""""""""""""""""""""""""
 
@@ -266,6 +268,24 @@ javascript.doNotRemoveInDocInHead
 
 This option can be used to prevent embedded scripts inside the document of the head section to be merged,
 minified or compressed.
+
+javascript.mergedHeadFilePosition
+"""""""""""""""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.javascript.mergedHeadFilePosition=` :ref:`t3tsref:data-type-string`
+
+Use this option to define the final position of the merged files and any other ones in the head section that
+were processed by the scriptmerger. The value is used inside a regular expression, but you cannot use any
+wildcards or such stuff.
+
+javascript.mergedBodyFilePosition
+"""""""""""""""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.javascript.mergedBodyFilePosition=` :ref:`t3tsref:data-type-string`
+
+Use this option to define the final position of the merged files and any other ones in the body section that
+were processed by the scriptmerger. The value is used inside a regular expression, but you cannot use any
+wildcards or such stuff.
 
 javascript.deferLoading
 """""""""""""""""""""""

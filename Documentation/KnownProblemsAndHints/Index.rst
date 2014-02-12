@@ -15,9 +15,6 @@ Known Problems And Hints
 - Embedded css and javascript in the document is automatically added to an external, cachable file. If you want
   to prevent this behaviour, just ignore the tags with the "data-ignore" attribute set to "1".
 
-- The addBeforeBody option doesn't merges the javascripts of head and body. You will have at least two
-  referenced files afterwards.
-
 - If you experience problems with the compression, make sure you have
   mod\_headers installed and activated. You can do this in e.g. ubuntu
   with a simple „sudo a2enmod headers && sudo service apache2 restart“ command.

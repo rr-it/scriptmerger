@@ -152,18 +152,18 @@ class ScriptmergerOutputHook {
 			$conditionalCommentPreserver = t3lib_div::makeInstance('ScriptmergerConditionalCommentPreserver');
 			$conditionalCommentPreserver->read();
 
-			if ($javascriptEnabled) {
-				/** @var ScriptmergerJavascript $javascriptProcessor */
-				$javascriptProcessor = t3lib_div::makeInstance('ScriptmergerJavascript');
-				$javascriptProcessor->injectExtensionConfiguration($this->extensionConfiguration);
-				$javascriptProcessor->process();
-			}
-
 			if ($cssEnabled) {
 				/** @var ScriptmergerCss $cssProcessor */
 				$cssProcessor = t3lib_div::makeInstance('ScriptmergerCss');
 				$cssProcessor->injectExtensionConfiguration($this->extensionConfiguration);
 				$cssProcessor->process();
+			}
+
+			if ($javascriptEnabled) {
+				/** @var ScriptmergerJavascript $javascriptProcessor */
+				$javascriptProcessor = t3lib_div::makeInstance('ScriptmergerJavascript');
+				$javascriptProcessor->injectExtensionConfiguration($this->extensionConfiguration);
+				$javascriptProcessor->process();
 			}
 
 			$conditionalCommentPreserver->writeBack();

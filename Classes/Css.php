@@ -392,7 +392,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 	 * @return void
 	 */
 	protected function writeToDocument() {
-		// write all files back to the document
+		$pattern = '/' . preg_quote($this->configuration['css.']['mergedFilePosition'], '/') . '/i';
 		$contentShouldBeAddedInline = $this->configuration['css.']['addContentInDocument'] === '1';
 		foreach ($this->css as $relation => $cssByRelation) {
 			$cssByRelation = array_reverse($cssByRelation);
@@ -430,10 +430,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 						continue;
 					} else {
 						$GLOBALS['TSFE']->content = preg_replace(
-							'/<(?:\/base|base|meta name="generator"|link|\/title|\/head).*?>/is',
-							'\0' . $content,
-							$GLOBALS['TSFE']->content,
-							1
+							$pattern, $content . '\0', $GLOBALS['TSFE']->content, 1
 						);
 					}
 				}

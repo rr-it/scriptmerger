@@ -419,13 +419,11 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				continue;
 			}
 
-			// prepare pattern
-			$addToBody = ($section === 'body' || $this->configuration['javascript.']['addBeforeBody'] === '1');
-			if ($addToBody) {
-				$pattern = '/<\/body>/i';
+			// addBeforeBody was deprecated in version 4.0.0 and can be removed later on
+			if ($section === 'body' || $this->configuration['javascript.']['addBeforeBody'] === '1') {
+				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . '/i';
 			} else {
-				$pattern = '/<(?:\/base|base|meta name="generator"|link|\/title).*?>/is';
-				$javascriptBySection = array_reverse($javascriptBySection);
+				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
 			}
 
 			foreach ($javascriptBySection as $javascriptProperties) {
@@ -476,8 +474,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 						$GLOBALS['TSFE']->content
 					);
 				} else {
-					$replacement = ($addToBody ? $content . '\0' : '\0' . $content);
-					$GLOBALS['TSFE']->content = preg_replace($pattern, $replacement, $GLOBALS['TSFE']->content, 1);
+					$GLOBALS['TSFE']->content = preg_replace($pattern, $content . '\0', $GLOBALS['TSFE']->content, 1);
 				}
 			}
 		}

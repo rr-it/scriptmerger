@@ -10,6 +10,7 @@ plugin.tx_scriptmerger {
 		enable = {$plugin.tx_scriptmerger.css.enable}
 		addContentInDocument = {$plugin.tx_scriptmerger.css.addContentInDocument}
 		doNotRemoveInDoc = {$plugin.tx_scriptmerger.css.doNotRemoveInDoc}
+		mergedFilePosition = {$plugin.tx_scriptmerger.css.mergedFilePosition}
 
 		minify {
 			enable = {$plugin.tx_scriptmerger.css.minify.enable}
@@ -40,9 +41,10 @@ plugin.tx_scriptmerger {
 	javascript {
 		enable = {$plugin.tx_scriptmerger.javascript.enable}
 		parseBody = {$plugin.tx_scriptmerger.javascript.parseBody}
-		addBeforeBody = {$plugin.tx_scriptmerger.javascript.addBeforeBody}
 		doNotRemoveInDocInBody = {$plugin.tx_scriptmerger.javascript.doNotRemoveInDocInBody}
 		doNotRemoveInDocInHead = {$plugin.tx_scriptmerger.javascript.doNotRemoveInDocInHead}
+		mergedHeadFilePosition = {$plugin.tx_scriptmerger.javascript.mergedHeadFilePosition}
+		mergedBodyFilePosition = {$plugin.tx_scriptmerger.javascript.mergedBodyFilePosition}
 		addContentInDocument = {$plugin.tx_scriptmerger.javascript.addContentInDocument}
 		deferLoading = {$plugin.tx_scriptmerger.javascript.deferLoading}
 
