@@ -250,7 +250,8 @@ class ScriptmergerCss extends ScriptmergerBase {
 				}
 
 				// ignore this file if the content could not be fetched
-				if ($ignoreDataFlagSet) {
+				$doNotRemoveInDoc = $this->configuration['css.']['doNotRemoveInDoc'] === '1';
+				if ($doNotRemoveInDoc || $ignoreDataFlagSet) {
 					$this->css[$relation][$media][$i]['minify-ignore'] = TRUE;
 					$this->css[$relation][$media][$i]['compress-ignore'] = TRUE;
 					$this->css[$relation][$media][$i]['merge-ignore'] = TRUE;

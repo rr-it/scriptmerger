@@ -17,6 +17,7 @@ Property                                              Data type                 
 externalFileCacheLifetime_                            :ref:`t3tsref:data-type-integer`           no                      3600
 css.enable_                                           :ref:`t3tsref:data-type-boolean`           no                      1
 css.addContentInDocument_                             :ref:`t3tsref:data-type-boolean`           no                      0
+css.doNotRemoveInDoc_                                 :ref:`t3tsref:data-type-boolean`           no                      0
 css.minify.enable_                                    :ref:`t3tsref:data-type-boolean`           no                      1
 css.minify.ignore_                                    :ref:`t3tsref:data-type-string`            no                      \.min\.
 css.compress.enable_                                  :ref:`t3tsref:data-type-boolean`           no                      1
@@ -32,6 +33,7 @@ javascript.addContentInDocument_                      :ref:`t3tsref:data-type-bo
 javascript.parseBody_                                 :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.addBeforeBody_                             :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.doNotRemoveInDocInBody_                    :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.doNotRemoveInDocInHead_                    :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.deferLoading_                              :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.minify.ignore_                             :ref:`t3tsref:data-type-string`            no                      \?,\.min\.
@@ -67,6 +69,13 @@ css.addContentInDocument
 
 Embed the resulting css directly into the document in favor of a
 linked resource (this automatically disables the compression step).
+
+css.doNotRemoveInDoc
+""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.css.doNotRemoveInDoc=` :ref:`t3tsref:data-type-boolean`
+
+This option can be used to prevent embedded scripts to be merged, minified or compressed.
 
 css.minify.enable
 """""""""""""""""
@@ -246,8 +255,17 @@ javascript.doNotRemoveInDocInBody
 
 :typoscript:`plugin.tx_scriptmerger.javascript.doNotRemoveInDocInBody=` :ref:`t3tsref:data-type-boolean`
 
-This option can be used to prevent embedded scripts inside the document of the body section to be merged as this
-is in many cases a possible error source in the final result. Therefore the option is enabled by default.
+This option can be used to prevent embedded scripts inside the document of the body section to be merged, minified
+or compressed as this is in many cases a possible error source in the final result. Therefore the option is
+enabled by default.
+
+javascript.doNotRemoveInDocInHead
+"""""""""""""""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.javascript.doNotRemoveInDocInHead=` :ref:`t3tsref:data-type-boolean`
+
+This option can be used to prevent embedded scripts inside the document of the head section to be merged,
+minified or compressed.
 
 javascript.deferLoading
 """""""""""""""""""""""

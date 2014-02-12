@@ -294,7 +294,9 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 
 					$doNotRemoveinDocInBody =
 						($this->configuration['javascript.']['doNotRemoveInDocInBody'] === '1' && $section === 'body');
-					if ($doNotRemoveinDocInBody || $ignoreDataFlagSet) {
+					$doNotRemoveinDocInHead =
+						($this->configuration['javascript.']['doNotRemoveInDocInHead'] === '1' && $section === 'head');
+					if ($doNotRemoveinDocInHead || $doNotRemoveinDocInBody || $ignoreDataFlagSet) {
 						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
 						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
 						$this->javascript[$section][$i]['merge-ignore'] = TRUE;

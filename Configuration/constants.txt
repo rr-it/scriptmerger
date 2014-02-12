@@ -2,6 +2,7 @@ plugin.tx_scriptmerger {
 	css {
 		enable = 1
 		addContentInDocument = 0
+		doNotRemoveInDoc = 0
 
 		minify {
 			enable = 1
@@ -34,6 +35,7 @@ plugin.tx_scriptmerger {
 		parseBody = 0
 		addBeforeBody = 0
 		doNotRemoveInDocInBody = 1
+		doNotRemoveInDocInHead = 0
 		addContentInDocument = 0
 		deferLoading = 0
 
