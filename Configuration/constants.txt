@@ -43,8 +43,8 @@ plugin.tx_scriptmerger {
 
 		minify {
 			enable = 1
-			useJSMinPlus = 0
-			useJShrink = 1
+			useJSMinPlus = 1
+			useJShrink = 0
 			ignore = \?,\.min\.
 		}
 

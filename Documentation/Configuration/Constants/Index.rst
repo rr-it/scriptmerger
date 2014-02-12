@@ -39,8 +39,8 @@ javascript.mergedBodyFilePosition_                    :ref:`t3tsref:data-type-st
 javascript.deferLoading_                              :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.minify.ignore_                             :ref:`t3tsref:data-type-string`            no                      \?,\.min\.
-javascript.minify.useJSMinPlus_                       :ref:`t3tsref:data-type-boolean`           no                      0
-javascript.minify.useJShrink_                         :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.minify.useJSMinPlus_                       :ref:`t3tsref:data-type-boolean`           no                      1
+javascript.minify.useJShrink_                         :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.compress.enable_                           :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.compress.ignore_                           :ref:`t3tsref:data-type-string`            no                      \?,\.gz\.
 javascript.merge.enable_                              :ref:`t3tsref:data-type-boolean`           no                      1
