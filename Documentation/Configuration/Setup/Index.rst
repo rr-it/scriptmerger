@@ -19,7 +19,7 @@ urlRegularExpressions.pattern1.replacement_           :ref:`t3tsref:data-type-st
 urlRegularExpressions.pattern1.useWholeContent_       :ref:`t3tsref:data-type-boolean`           no                      0
 ===================================================== ========================================== ======================= =============================================
 
-Property details
+Property Details
 ^^^^^^^^^^^^^^^^
 
 urlRegularExpressions

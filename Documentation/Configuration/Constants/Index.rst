@@ -47,7 +47,7 @@ javascript.merge.enable_                              :ref:`t3tsref:data-type-bo
 javascript.merge.ignore_                              :ref:`t3tsref:data-type-string`            no                      \?
 ===================================================== ========================================== ======================= =============================================
 
-Property details
+Property Details
 ^^^^^^^^^^^^^^^^
 
 externalFileCacheLifetime
