@@ -18,7 +18,7 @@ externalFileCacheLifetime_                            :ref:`t3tsref:data-type-in
 css.enable_                                           :ref:`t3tsref:data-type-boolean`           no                      1
 css.addContentInDocument_                             :ref:`t3tsref:data-type-boolean`           no                      0
 css.doNotRemoveInDoc_                                 :ref:`t3tsref:data-type-boolean`           no                      0
-css.mergedFilePosition_                               :ref:`t3tsref:data-type-string`            no                      </head>
+css.mergedFilePosition_                               :ref:`t3tsref:data-type-string`            no                      *empty*
 css.minify.enable_                                    :ref:`t3tsref:data-type-boolean`           no                      1
 css.minify.ignore_                                    :ref:`t3tsref:data-type-string`            no                      \.min\.
 css.compress.enable_                                  :ref:`t3tsref:data-type-boolean`           no                      1
@@ -34,7 +34,7 @@ javascript.addContentInDocument_                      :ref:`t3tsref:data-type-bo
 javascript.parseBody_                                 :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.doNotRemoveInDocInBody_                    :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.doNotRemoveInDocInHead_                    :ref:`t3tsref:data-type-boolean`           no                      0
-javascript.mergedHeadFilePosition_                    :ref:`t3tsref:data-type-string`            no                      </head>
+javascript.mergedHeadFilePosition_                    :ref:`t3tsref:data-type-string`            no                      *empty*
 javascript.mergedBodyFilePosition_                    :ref:`t3tsref:data-type-string`            no                      </body>
 javascript.deferLoading_                              :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`           no                      1
@@ -86,6 +86,7 @@ css.mergedFilePosition
 
 Use this option to define the final position of the merged files and any other ones that were processed by
 the scriptmerger. The value is used inside a regular expression, but you cannot use any wildcards or such stuff.
+A possible value could be "</head>". If empty, the position of the first merged file is reused.
 
 css.minify.enable
 """""""""""""""""
@@ -276,7 +277,8 @@ javascript.mergedHeadFilePosition
 
 Use this option to define the final position of the merged files and any other ones in the head section that
 were processed by the scriptmerger. The value is used inside a regular expression, but you cannot use any
-wildcards or such stuff.
+wildcards or such stuff. A possible value could be "</head>".  If empty, the position of the first merged file
+is reused.
 
 javascript.mergedBodyFilePosition
 """""""""""""""""""""""""""""""""

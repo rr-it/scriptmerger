@@ -3,7 +3,7 @@ plugin.tx_scriptmerger {
 		enable = 1
 		addContentInDocument = 0
 		doNotRemoveInDoc = 0
-		mergedFilePosition = </head>
+		mergedFilePosition =
 
 		minify {
 			enable = 1
@@ -36,7 +36,7 @@ plugin.tx_scriptmerger {
 		parseBody = 0
 		doNotRemoveInDocInBody = 1
 		doNotRemoveInDocInHead = 0
-		mergedHeadFilePosition = </head>
+		mergedHeadFilePosition =
 		mergedBodyFilePosition = </body>
 		addContentInDocument = 0
 		deferLoading = 0

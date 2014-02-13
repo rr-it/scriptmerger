@@ -53,7 +53,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		// minify, compress and merging
 		foreach ($this->javascript as $section => $javascriptBySection) {
 			$mergedContent = '';
-			$firstFreeIndex = -1;
+			$positionOfMergedFile = NULL;
 			foreach ($javascriptBySection as $index => $javascriptProperties) {
 				$newFile = '';
 
@@ -68,18 +68,12 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				if ($this->configuration['javascript.']['merge.']['enable'] === '1' &&
 					!$javascriptProperties['merge-ignore']
 				) {
-					if ($firstFreeIndex < 0) {
-						$firstFreeIndex = $index;
+					if ($positionOfMergedFile === NULL) {
+						$positionOfMergedFile = $javascriptProperties['position-key'];
 					}
 
-					// add content
 					$mergedContent .= $javascriptProperties['content'] . LF;
-
-					// remove file from array
 					unset($this->javascript[$section][$index]);
-
-					// we doesn't need to compress or add a new file to the array,
-					// because the last one will finally not be needed anymore
 					continue;
 				}
 
@@ -122,11 +116,12 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				}
 
 				// add new entry
-				$this->javascript[$section][$firstFreeIndex]['file'] = $newFile;
-				$this->javascript[$section][$firstFreeIndex]['content'] =
-					$properties['content'];
-				$this->javascript[$section][$firstFreeIndex]['basename'] =
-					$properties['basename'];
+				$this->javascript[$section][] = array(
+					'file' => $newFile,
+					'content' => $properties['content'],
+					'basename' => $properties['basename'],
+					'position-key' => $positionOfMergedFile,
+				);
 			}
 		}
 
@@ -420,9 +415,10 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			}
 
 			// addBeforeBody was deprecated in version 4.0.0 and can be removed later on
+			$pattern = '';
 			if ($section === 'body' || $this->configuration['javascript.']['addBeforeBody'] === '1') {
 				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . '/i';
-			} else {
+			} elseif (trim($this->configuration['javascript.']['mergedHeadFilePosition']) !== '') {
 				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
 			}
 
@@ -466,7 +462,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					}
 				}
 
-				if ($javascriptProperties['merge-ignore']) {
+				if ($pattern === '' || $javascriptProperties['merge-ignore']) {
 					// add body scripts back to their original place if they were ignored
 					$GLOBALS['TSFE']->content = str_replace(
 						'###MERGER-' . $section . $javascriptProperties['position-key'] . 'MERGER###',

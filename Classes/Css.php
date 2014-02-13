@@ -71,7 +71,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 		foreach ($this->css as $relation => $cssByRelation) {
 			foreach ($cssByRelation as $media => $cssByMedia) {
 				$mergedContent = '';
-				$firstFreeIndex = -1;
+				$positionOfMergedFile = NULL;
 				foreach ($cssByMedia as $index => $cssProperties) {
 					$newFile = '';
 
@@ -86,18 +86,12 @@ class ScriptmergerCss extends ScriptmergerBase {
 					if ($this->configuration['css.']['merge.']['enable'] === '1' &&
 						!$cssProperties['merge-ignore']
 					) {
-						if ($firstFreeIndex < 0) {
-							$firstFreeIndex = $index;
+						if ($positionOfMergedFile === NULL) {
+							$positionOfMergedFile = $cssProperties['position-key'];
 						}
 
-						// add content
 						$mergedContent .= $cssProperties['content'] . LF;
-
-						// remove file from array
 						unset($this->css[$relation][$media][$index]);
-
-						// we doesn't need to compress or add a new file to the array,
-						// because the last one will finally not be needed anymore
 						continue;
 					}
 
@@ -144,11 +138,12 @@ class ScriptmergerCss extends ScriptmergerBase {
 					}
 
 					// add new entry
-					$this->css[$relation][$media][$firstFreeIndex]['file'] = $newFile;
-					$this->css[$relation][$media][$firstFreeIndex]['content'] =
-						$properties['content'];
-					$this->css[$relation][$media][$firstFreeIndex]['basename'] =
-						$properties['basename'];
+					$this->css[$relation][$media][] = array(
+						'file' => $newFile,
+						'content' => $properties['content'],
+						'basename' => $properties['basename'],
+						'position-key' => $positionOfMergedFile,
+					);
 				}
 			}
 		}
@@ -392,7 +387,11 @@ class ScriptmergerCss extends ScriptmergerBase {
 	 * @return void
 	 */
 	protected function writeToDocument() {
-		$pattern = '/' . preg_quote($this->configuration['css.']['mergedFilePosition'], '/') . '/i';
+		$pattern = '';
+		if (trim($this->configuration['css.']['mergedFilePosition']) !== '') {
+			$pattern = '/' . preg_quote($this->configuration['css.']['mergedFilePosition'], '/') . '/i';
+		}
+
 		$contentShouldBeAddedInline = $this->configuration['css.']['addContentInDocument'] === '1';
 		foreach ($this->css as $relation => $cssByRelation) {
 			$cssByRelation = array_reverse($cssByRelation);
@@ -421,7 +420,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . LF;
 					}
 
-					if ($cssProperties['merge-ignore']) {
+					if ($pattern === '' || $cssProperties['merge-ignore']) {
 						$GLOBALS['TSFE']->content = str_replace(
 							'###MERGER' . $cssProperties['position-key'] . 'MERGER###',
 							$content,
