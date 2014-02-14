@@ -18,7 +18,7 @@ EXT:scriptmerger
 		Stefan Galinski
 
 	:Version:
-		4.0.0
+		|release|
 
 	:Language:
 		en
@@ -26,7 +26,7 @@ EXT:scriptmerger
 	:Description:
 		This extension minimizes the http requests by concatenating your css and javascript.
 		Furthermore the result can be minified and compressed. This whole process is highly configurable
-		and is partly based on the "minify", "jsminplus" and "jsmin" projects.
+		and is partly based on the "minify", "jsminplus", "jshrink" and "jsmin" projects.
 
 	:Keywords:
 		performance, compression, merging, javascript, stylesheets
