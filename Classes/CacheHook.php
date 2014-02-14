@@ -29,7 +29,7 @@
 /**
  * This class contains a hook method for the "clear all cache" action in the TYPO3 backend.
  */
-class ScriptmergerCacheHook {
+class user_ScriptmergerCacheHook {
 	/**
 	 * Contains the temporary directories of this extension.
 	 *

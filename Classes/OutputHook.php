@@ -32,7 +32,7 @@ require_once($pathToScriptmerger . 'Classes/ConditionalCommentPreserver.php');
 /**
  * This class contains the output hooks that trigger the scriptmerger process
  */
-class ScriptmergerOutputHook {
+class user_ScriptmergerOutputHook {
 	/**
 	 * holds the extension configuration
 	 *
