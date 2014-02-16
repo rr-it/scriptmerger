@@ -126,9 +126,12 @@ abstract class ScriptmergerBase {
 		$result = t3lib_div::writeFile($file, $content);
 
 		// hook here for other file system operations like syncing to other servers etc.
-		foreach ($GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['scriptmerger']['writeFilePostHook'] as $classReference) {
-			$hookObject = t3lib_div::getUserObj($classReference);
-			$hookObject->writeFilePostHook($file, $content, $this);
+		$hooks = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['scriptmerger']['writeFilePostHook'];
+		if (is_array($hooks)) {
+			foreach ($hooks as $classReference) {
+				$hookObject = t3lib_div::getUserObj($classReference);
+				$hookObject->writeFilePostHook($file, $content, $this);
+			}
 		}
 
 		return $result;
