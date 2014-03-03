@@ -51,10 +51,13 @@ class ScriptmergerCss extends ScriptmergerBase {
 	protected $css = array();
 
 	/**
-	 * Constructor
+	 * Injects the extension configuration
+	 *
+	 * @param array $configuration
+	 * @return void
 	 */
-	public function __construct() {
-		parent::__construct();
+	public function injectExtensionConfiguration(array $configuration) {
+		parent::injectExtensionConfiguration($configuration);
 		Minify_ImportProcessor::$extensionConfiguration = $this->configuration;
 	}
 
