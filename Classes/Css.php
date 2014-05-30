@@ -236,7 +236,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 			$this->css[$relation][$media][$i]['original'] = $cssTags[0][$i];
 
 			// styles which are added inside the document must be parsed again to fetch the pure css code
-			$cssTags[1][$i] = ($cssTags[1][$i] === 'sty' ? 'style' : $cssTags[1][$i]);
+			$cssTags[1][$i] = (strtolower($cssTags[1][$i]) === 'sty' ? 'style' : strtolower($cssTags[1][$i]));
 			if ($cssTags[1][$i] === 'style') {
 				$cssContent = array();
 				preg_match_all($filterInDocumentPattern, $cssTags[0][$i], $cssContent);
