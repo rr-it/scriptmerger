@@ -9,10 +9,10 @@ Configuration
 This chapter describes the TypoScript extension parameters.
 
 .. toctree::
-:maxdepth: 5
-	   :titlesonly:
-	   :glob:
+	:maxdepth: 5
+	:titlesonly:
+	:glob:
 
-	   Constants/Index
-	   Setup/Index
-	   Example/Index
+	Constants/Index
+	Setup/Index
+	Example/Index
