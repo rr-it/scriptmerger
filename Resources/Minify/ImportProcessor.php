@@ -65,7 +65,7 @@ class Minify_ImportProcessor {
         $this->_currentDir = dirname($file);
 
 // ##################### BEGIN TYPO3 modification
-		if (strpos($this->_currentDir, realpath(t3lib_div::getIndpEnv('TYPO3_DOCUMENT_ROOT'))) === FALSE) {
+		if (strpos($this->_currentDir, realpath(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_DOCUMENT_ROOT'))) === FALSE) {
 			$realPathToTYPO3 = str_replace('typo3/', '', realpath(PATH_typo3));
 			$this->_currentDir = str_replace($realPathToTYPO3, '', $this->_currentDir);
 			$this->_currentDir = realpath(PATH_site) . '/typo3' . $this->_currentDir;

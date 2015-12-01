@@ -1,5 +1,7 @@
 <?php
 
+namespace SGalinski\Scriptmerger;
+
 /***************************************************************
  *  Copyright notice
  *
@@ -22,13 +24,6 @@
  *
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
-
-$pathToScriptmerger = t3lib_extMgm::extPath('scriptmerger');
-require_once($pathToScriptmerger . 'Resources/Minify/ImportProcessor.php');
-require_once($pathToScriptmerger . 'Resources/Minify/CSS.php');
-require_once($pathToScriptmerger . 'Resources/Minify/CommentPreserver.php');
-require_once($pathToScriptmerger . 'Resources/Minify/CSS/Compressor.php');
-require_once($pathToScriptmerger . 'Resources/Minify/CSS/UriRewriter.php');
 
 /**
  * This class contains the parsing and replacing functionality for css files
@@ -58,7 +53,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 	 */
 	public function injectExtensionConfiguration(array $configuration) {
 		parent::injectExtensionConfiguration($configuration);
-		Minify_ImportProcessor::$extensionConfiguration = $this->configuration;
+		\Minify_ImportProcessor::$extensionConfiguration = $this->configuration;
 	}
 
 	/**
@@ -280,10 +275,10 @@ class ScriptmergerCss extends ScriptmergerBase {
 					$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 				}
 				if (file_exists(PATH_site . $file)) {
-					$content = Minify_ImportProcessor::process(PATH_site . $file);
+					$content = \Minify_ImportProcessor::process(PATH_site . $file);
 				} else {
 					$tempFile = $this->getExternalFile($source);
-					$content = Minify_ImportProcessor::process($tempFile);
+					$content = \Minify_ImportProcessor::process($tempFile);
 				}
 
 				// ignore this file if the content could not be fetched
@@ -356,7 +351,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 
 		// minify content
 		/** @noinspection PhpUndefinedClassInspection */
-		$properties['content'] = Minify_CSS::minify($properties['content']);
+		$properties['content'] = \Minify_CSS::minify($properties['content']);
 
 		// save content inside the new file
 		$this->writeFile($newFile, $properties['content']);

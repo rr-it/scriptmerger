@@ -1,5 +1,7 @@
 <?php
 
+namespace SGalinski\Scriptmerger;
+
 /***************************************************************
  *  Copyright notice
  *
@@ -23,11 +25,8 @@
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
-$pathToScriptmerger = t3lib_extMgm::extPath('scriptmerger');
-require_once($pathToScriptmerger . 'Classes/Base.php');
-require_once($pathToScriptmerger . 'Classes/Css.php');
-require_once($pathToScriptmerger . 'Classes/Javascript.php');
-require_once($pathToScriptmerger . 'Classes/ConditionalCommentPreserver.php');
+use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController;
 
 /**
  * This class contains the output hooks that trigger the scriptmerger process
@@ -110,11 +109,12 @@ class user_ScriptmergerOutputHook {
 	 * @return bool
 	 */
 	public function contentPostProcOutput() {
-		/** @var $tsfe tslib_fe */
+		/** @var $tsfe TypoScriptFrontendController */
 		$tsfe = $GLOBALS['TSFE'];
-		if (!$tsfe->isINTincScript() || intval(t3lib_div::_GP('disableScriptmerger')) === 1) {
+		if (!$tsfe->isINTincScript() || intval(GeneralUtility::_GP('disableScriptmerger')) === 1) {
 			return TRUE;
 		}
+
 
 		$this->prepareExtensionConfiguration();
 		$this->process();
@@ -128,9 +128,9 @@ class user_ScriptmergerOutputHook {
 	 * @return bool
 	 */
 	public function contentPostProcAll() {
-		/** @var $tsfe tslib_fe */
+		/** @var $tsfe TypoScriptFrontendController */
 		$tsfe = $GLOBALS['TSFE'];
-		if ($tsfe->isINTincScript() || intval(t3lib_div::_GP('disableScriptmerger')) === 1) {
+		if ($tsfe->isINTincScript() || intval(GeneralUtility::_GP('disableScriptmerger')) === 1) {
 			return TRUE;
 		}
 
@@ -149,19 +149,21 @@ class user_ScriptmergerOutputHook {
 		$cssEnabled = $this->extensionConfiguration['css.']['enable'] === '1';
 		if ($cssEnabled || $javascriptEnabled) {
 			/** @var ScriptmergerConditionalCommentPreserver $conditionalCommentPreserver */
-			$conditionalCommentPreserver = t3lib_div::makeInstance('ScriptmergerConditionalCommentPreserver');
+			$conditionalCommentPreserver = GeneralUtility::makeInstance(
+				'SGalinski\Scriptmerger\ScriptmergerConditionalCommentPreserver'
+			);
 			$conditionalCommentPreserver->read();
 
 			if ($cssEnabled) {
 				/** @var ScriptmergerCss $cssProcessor */
-				$cssProcessor = t3lib_div::makeInstance('ScriptmergerCss');
+				$cssProcessor = GeneralUtility::makeInstance('SGalinski\Scriptmerger\ScriptmergerCss');
 				$cssProcessor->injectExtensionConfiguration($this->extensionConfiguration);
 				$cssProcessor->process();
 			}
 
 			if ($javascriptEnabled) {
 				/** @var ScriptmergerJavascript $javascriptProcessor */
-				$javascriptProcessor = t3lib_div::makeInstance('ScriptmergerJavascript');
+				$javascriptProcessor = GeneralUtility::makeInstance('SGalinski\Scriptmerger\ScriptmergerJavascript');
 				$javascriptProcessor->injectExtensionConfiguration($this->extensionConfiguration);
 				$javascriptProcessor->process();
 			}

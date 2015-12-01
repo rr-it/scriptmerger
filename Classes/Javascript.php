@@ -1,5 +1,7 @@
 <?php
 
+namespace SGalinski\Scriptmerger;
+
 /***************************************************************
  *  Copyright notice
  *
@@ -22,6 +24,10 @@
  *
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
+
+use JShrink\Minifier;
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class contains the parsing and replacing functionality for javascript files
@@ -346,26 +352,26 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		try {
 			if (!$hasConditionalCompilation && $this->configuration['javascript.']['minify.']['useJShrink'] === '1') {
 				if (!class_exists('JShrink\Minifier', FALSE)) {
-					require_once(t3lib_extMgm::extPath('scriptmerger') . 'Resources/JShrink/Minifier.php');
+					require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/JShrink/Minifier.php');
 				}
 
-				$minifiedContent = JShrink\Minifier::minify($properties['content']);
+				$minifiedContent =  Minifier::minify($properties['content']);
 			} elseif (!$hasConditionalCompilation && $this->configuration['javascript.']['minify.']['useJSMinPlus'] === '1') {
 				if (!class_exists('JSMinPlus', FALSE)) {
-					require_once(t3lib_extMgm::extPath('scriptmerger') . 'Resources/jsminplus.php');
+					require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/jsminplus.php');
 				}
 
-				$minifiedContent = JSMinPlus::minify($properties['content']);
+				$minifiedContent = \JSMinPlus::minify($properties['content']);
 
 			} else {
 				if (!class_exists('JSMin', FALSE)) {
-					require_once(t3lib_extMgm::extPath('scriptmerger') . 'Resources/jsmin.php');
+					require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/jsmin.php');
 				}
 
 				/** @noinspection PhpUndefinedClassInspection */
-				$minifiedContent = JSMin::minify($properties['content']);
+				$minifiedContent = \JSMin::minify($properties['content']);
 			}
-		} catch (Exception $exception) {
+		} catch (\Exception $exception) {
 			$hasErrors = TRUE;
 		}
 
@@ -375,7 +381,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		} else {
 			$message = 'This javascript file could not be minified: "' . $properties['file'] . '"! ' .
 				'You should exclude it from the minification process!';
-			t3lib_div::sysLog($message, 'scriptmerger', t3lib_div::SYSLOG_SEVERITY_ERROR);
+			GeneralUtility::sysLog($message, 'scriptmerger', GeneralUtility::SYSLOG_SEVERITY_ERROR);
 		}
 
 		$this->writeFile($newFile, $properties['content']);

@@ -5,6 +5,6 @@ if (!defined('TYPO3_MODE')) {
 }
 
 /** @noinspection PhpUndefinedVariableInspection */
-t3lib_extMgm::addStaticFile($_EXTKEY, 'Configuration/', 'Scriptmerger');
+\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::addStaticFile($_EXTKEY, 'Configuration/', 'Scriptmerger');
 
 ?>

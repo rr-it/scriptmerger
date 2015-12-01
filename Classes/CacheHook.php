@@ -1,5 +1,7 @@
 <?php
 
+namespace SGalinski\Scriptmerger;
+
 /***************************************************************
  *  Copyright notice
  *

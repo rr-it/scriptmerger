@@ -1,5 +1,7 @@
 <?php
 
+namespace SGalinski\Scriptmerger;
+
 /***************************************************************
  *  Copyright notice
  *
@@ -22,6 +24,8 @@
  *
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
+
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
  * This class contains the basic stuff required by both processors, css and javascript.
@@ -53,7 +57,7 @@ abstract class ScriptmergerBase {
 
 		foreach ($this->tempDirectories as $directory) {
 			if (!is_dir($directory)) {
-				t3lib_div::mkdir($directory);
+				GeneralUtility::mkdir($directory);
 			}
 		}
 	}
@@ -97,7 +101,7 @@ abstract class ScriptmergerBase {
 				$source = $protocol . $source;
 			}
 
-			$content = t3lib_div::getURL($source);
+			$content = GeneralUtility::getURL($source);
 			if ($content !== FALSE) {
 				$this->writeFile($cacheFile, $content);
 			} else {
@@ -123,13 +127,13 @@ abstract class ScriptmergerBase {
 	 * @return boolean TRUE if the file was successfully opened and written to.
 	 */
 	protected function writeFile($file, $content) {
-		$result = t3lib_div::writeFile($file, $content);
+		$result = GeneralUtility::writeFile($file, $content);
 
 		// hook here for other file system operations like syncing to other servers etc.
 		$hooks = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['scriptmerger']['writeFilePostHook'];
 		if (is_array($hooks)) {
 			foreach ($hooks as $classReference) {
-				$hookObject = t3lib_div::getUserObj($classReference);
+				$hookObject = GeneralUtility::getUserObj($classReference);
 				$hookObject->writeFilePostHook($file, $content, $this);
 			}
 		}
