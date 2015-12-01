@@ -264,7 +264,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 
 				// try to resolve any @import occurrences
 				/** @noinspection PhpUndefinedClassInspection */
-				$content = Minify_ImportProcessor::process($tempFile);
+				$content = \Minify_ImportProcessor::process($tempFile);
 				$this->css[$relation][$media][$i]['file'] = $tempFile;
 				$this->css[$relation][$media][$i]['content'] = $content;
 				$this->css[$relation][$media][$i]['basename'] = basename($source);
