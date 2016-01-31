@@ -11,7 +11,9 @@
   "require": {
     "typo3/cms-core": "*"
   },
-  "replace": {
-    "scriptmerger": "*"
+  "autoload": {
+    "psr-4": {
+      "SGalinski\\Scriptmerger\\": "Classes/"
+    }
   }
 }

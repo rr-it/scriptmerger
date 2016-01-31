@@ -25,6 +25,8 @@ namespace SGalinski\Scriptmerger;
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
+use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+
 /**
  * This class contains the parsing and replacing functionality for css files
  */
@@ -53,6 +55,10 @@ class ScriptmergerCss extends ScriptmergerBase {
 	 */
 	public function injectExtensionConfiguration(array $configuration) {
 		parent::injectExtensionConfiguration($configuration);
+
+		if (!class_exists('Minify_ImportProcessor', FALSE)) {
+			require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/Minify/ImportProcessor.php');
+		}
 		\Minify_ImportProcessor::$extensionConfiguration = $this->configuration;
 	}
 
@@ -350,6 +356,10 @@ class ScriptmergerCss extends ScriptmergerBase {
 		}
 
 		// minify content
+		if (!class_exists('Minify_CSS', FALSE)) {
+			require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/Minify/CSS.php');
+		}
+
 		/** @noinspection PhpUndefinedClassInspection */
 		$properties['content'] = \Minify_CSS::minify($properties['content']);
 

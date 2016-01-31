@@ -1,7 +1,5 @@
 <?php
 
-// Can be activated as far as TYPO3 4.5 support is dropped
-
 $extensionPath = \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::extPath('scriptmerger');
 
 return array(
@@ -14,5 +12,3 @@ return array(
 	'jsmin' => $extensionPath . 'Resources/jsmin.php',
 	'jshrink\\minifier' => $extensionPath . 'Resources/JShrink/Minifier.php',
 );
-
-?>
