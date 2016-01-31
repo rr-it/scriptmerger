@@ -4,7 +4,7 @@
   "description": "CSS/Javascript Minificator, Compressor And Concatenator - This extension minimizes the http requests by concatenating your css and javascript. Furthermore the result can be minified and compressed. This whole process is highly configurable and is partly based on the \"minify\", \"jsminplus\" and \"jsmin\" projects.",
   "homepage": "https://www.sgalinski.de",
   "license": ["GPL-2.0+"],
-  "version": "5.0.0",
+  "version": "5.0.1",
   "support": {
     "issues": "https://forge.typo3.org/projects/extension-scriptmerger/issues"
   },
