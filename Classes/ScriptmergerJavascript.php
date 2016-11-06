@@ -433,7 +433,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					$content = $javascriptProperties['original'];
 				} elseif ($javascriptProperties['addInDocument'] || $shouldBeAddedInDoc) {
 					$content = "\t" .
-						'<script type="text/javascript">' . LF .
+						'<script async type="text/javascript">' . LF .
 						"\t" . '/* <![CDATA[ */' . LF .
 						"\t" . $javascriptProperties['content'] . LF .
 						"\t" . '/* ]]> */' . LF .
@@ -447,7 +447,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 
 					if ($this->configuration['javascript.']['deferLoading'] === '1') {
 						$content = '
-	<script type="text/javascript" defer="defer">
+	<script async type="text/javascript" defer="defer">
 		function downloadJSAtOnload() {
 			var element = document.createElement("script");
 			element.src = "' . $file . '";
@@ -464,7 +464,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 </script>';
 					} else {
 						$content = "\t" .
-							'<script type="text/javascript" src="' . $file . '"></script>' . LF;
+							'<script async type="text/javascript" src="' . $file . '"></script>' . LF;
 					}
 				}
 
