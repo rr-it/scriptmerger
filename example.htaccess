@@ -8,7 +8,7 @@ FileETag MTime Size
 
 # Client caching of JS/CSS files (because they are merged with an applied hash!)
 # Note: Unsetting of the last modified header causes a permant 200 Ok status
-<FilesMatch "\.(merge|min|gz)(\.gz)?\.(js|css)">
+<FilesMatch "\.(merged|min|gz)(\.gz)?\.(js|css)">
 	<IfModule mod_expires.c>
 		ExpiresActive on
 		ExpiresDefault "access plus 1 year"
