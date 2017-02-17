@@ -1,4 +1,4 @@
-location ~ \.(merge|min|gz)(\.gz)?\.(js|css) {
+location ~ \.(merged|min|gz)(\.gz)?\.(js|css) {
 	expires 365d;
 	add_header Cache-Control "public";
 }
