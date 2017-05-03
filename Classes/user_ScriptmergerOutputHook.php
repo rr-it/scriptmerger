@@ -198,7 +198,11 @@ class user_ScriptmergerOutputHook {
 			}
 
 			if ($expressions[$index . '.']['useWholeContent'] === '1') {
-				$GLOBALS['TSFE']->content = preg_replace($expression, $replacement, $GLOBALS['TSFE']->content);
+				// This function will return NULL on an error. So in some cases the whole content can be just deleted.
+				$processedContent = preg_replace($expression, $replacement, $GLOBALS['TSFE']->content);
+				if ($processedContent !== NULL) {
+					$GLOBALS['TSFE']->content = $processedContent;
+				}
 			} else {
 				$userExpression = trim(str_replace('/', '\/', $expression));
 				$expression = '/<(?:img|link|style|script|meta|input)' .
