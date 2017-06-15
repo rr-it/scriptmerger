@@ -206,7 +206,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					preg_match('/^<script([^>]*)>/', trim($results[0][$i]), $scriptAttribute);
 					$isSourceFromMainAttribute = (strpos($scriptAttribute[1], $source) !== FALSE);
 				}
-				$ignoreDataFlagSet = intval($results[2][$i]);
+				$ignoreDataFlagSet = (int) $results[2][$i];
 
 				// add basic entry
 				$this->javascript[$section][$i]['minify-ignore'] = FALSE;

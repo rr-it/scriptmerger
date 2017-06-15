@@ -111,7 +111,7 @@ class user_ScriptmergerOutputHook {
 	public function contentPostProcOutput() {
 		/** @var $tsfe TypoScriptFrontendController */
 		$tsfe = $GLOBALS['TSFE'];
-		if (!$tsfe->isINTincScript() || intval(GeneralUtility::_GP('disableScriptmerger')) === 1) {
+		if (!$tsfe->isINTincScript() || ((int) GeneralUtility::_GP('disableScriptmerger')) === 1) {
 			return TRUE;
 		}
 
@@ -130,7 +130,7 @@ class user_ScriptmergerOutputHook {
 	public function contentPostProcAll() {
 		/** @var $tsfe TypoScriptFrontendController */
 		$tsfe = $GLOBALS['TSFE'];
-		if ($tsfe->isINTincScript() || intval(GeneralUtility::_GP('disableScriptmerger')) === 1) {
+		if ($tsfe->isINTincScript() || ((int) GeneralUtility::_GP('disableScriptmerger')) === 1) {
 			return TRUE;
 		}
 

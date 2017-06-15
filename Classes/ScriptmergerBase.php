@@ -77,7 +77,7 @@ abstract class ScriptmergerBase {
 	 *
 	 * @return void
 	 */
-	abstract function process();
+	abstract public function process();
 
 	/**
 	 * Gets a file from an external resource (e.g. http://) and caches them
@@ -90,7 +90,7 @@ abstract class ScriptmergerBase {
 		$filename = basename($source);
 		$hash = md5($source);
 		$cacheFile = $this->tempDirectories['temp'] . $filename . '-' . $hash;
-		$externalFileCacheLifetime = intval($this->configuration['externalFileCacheLifetime']);
+		$externalFileCacheLifetime = (int) $this->configuration['externalFileCacheLifetime'];
 		$cacheLifetime = ($externalFileCacheLifetime > 0) ? $externalFileCacheLifetime : 3600;
 
 		// check the age of the cache file (also fails with non-existent file)

@@ -221,7 +221,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 			$relation = (trim($cssTags[4][$i]) === '') ? 'stylesheet' : $cssTags[4][$i];
 			$source = $cssTags[3][$i];
 			$title = trim($cssTags[5][$i]);
-			$ignoreDataFlagSet = intval($cssTags[6][$i]);
+			$ignoreDataFlagSet = (int) $cssTags[6][$i];
 
 			// add basic entry
 			$this->css[$relation][$media][$i]['minify-ignore'] = FALSE;
