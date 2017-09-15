@@ -180,6 +180,12 @@ class Minify_ImportProcessor {
 			$pattern = self::$extensionConfiguration['css.']['postUrlProcessing.']['pattern'];
 			$replacement = self::$extensionConfiguration['css.']['postUrlProcessing.']['replacement'];
 			$url = preg_replace($pattern, $replacement, $url);
+		} elseif (is_array(self::$extensionConfiguration['css.']['postUrlProcessing.'])) {
+			foreach (self::$extensionConfiguration['css.']['postUrlProcessing.'] as $configuration) {
+				$pattern = $configuration['pattern'];
+				$replacement = $configuration['replacement'];
+				$url = preg_replace($pattern, $replacement, $url);
+			}
 		}
 
 // ##################### END TYPO3 modification
