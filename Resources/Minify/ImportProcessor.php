@@ -180,8 +180,14 @@ class Minify_ImportProcessor {
 			$pattern = self::$extensionConfiguration['css.']['postUrlProcessing.']['pattern'];
 			$replacement = self::$extensionConfiguration['css.']['postUrlProcessing.']['replacement'];
 			$url = preg_replace($pattern, $replacement, $url);
-		} elseif (is_array(self::$extensionConfiguration['css.']['postUrlProcessing.'])) {
+		} elseif (is_array(self::$extensionConfiguration['css.']['postUrlProcessing.'])
+			&& count(self::$extensionConfiguration['css.']['postUrlProcessing.']) > 0
+		) {
 			foreach (self::$extensionConfiguration['css.']['postUrlProcessing.'] as $configuration) {
+				if (!isset($configuration['pattern']) || !isset($configuration['replacement'])) {
+					continue;
+				}
+
 				$pattern = $configuration['pattern'];
 				$replacement = $configuration['replacement'];
 				$url = preg_replace($pattern, $replacement, $url);
