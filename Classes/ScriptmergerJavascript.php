@@ -159,7 +159,10 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 
 		// filter pattern for the inDoc scripts (fetches the content)
 		$filterInDocumentPattern = '/' .
-			'<script.*?>' . // The expression removes the opening script tag
+			'<script' . // This expression includes any script nodes.
+			'(?=.+?(?:type="(.*?)"|>))' . // It fetches the type attribute.
+			'(?=.+?(?:data-ignore=["\'](.*?)["\']|>))' . // and the data-ignore attribute of the tag.
+			'[^>]*?>' . // Finally we finish the parsing of the opening tag
 			'(?:.*?\/\*<!\[CDATA\[\*\/)?' . // and the optionally prefixed CDATA string.
 			'(?:.*?<!--)?' . // senseless <!-- construct
 			'\s*(.*?)' . // We save the pure js content,
@@ -287,8 +290,22 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					$javascriptContent = array();
 					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
 
-					// we doesn't need to continue if it was an empty script tag
-					if ($javascriptContent[1][0] === '') {
+					$scriptTagType = $javascriptContent[1][0];
+					$scriptTagIgnore = (bool) $javascriptContent[2][0];
+					$scriptTagContent = $javascriptContent[3][0];
+
+					// ignore this tag if it is marked with data-ignore
+					// ignore also if the type is specified as something different than javascript
+					// if not type is declared at all, assume javascript to be the correct type
+					if ($scriptTagIgnore || ($scriptTagType !== '' && $scriptTagType !== 'text/javascript')) {
+						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
+						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
+						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
+						$this->javascript[$section][$i]['useOriginalCodeLine'] = TRUE;
+					}
+
+					// we don't need to continue if it was an empty script tag
+					if ($scriptTagContent === '') {
 						unset($this->javascript[$section][$i]);
 						continue;
 					}
