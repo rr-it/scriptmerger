@@ -9,7 +9,8 @@
     "issues": "https://gitlab.sgalinski.de/typo3/scriptmerger"
   },
   "require": {
-    "typo3/cms-core": "*"
+    "typo3/cms-core": "*",
+    "php": ">=7.0.0"
   },
   "autoload": {
     "psr-4": {
