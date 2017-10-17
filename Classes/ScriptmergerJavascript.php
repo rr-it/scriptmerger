@@ -152,7 +152,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		$searchScriptsPattern = '/' .
 			'<script' . // This expression includes any script nodes.
 			'(?=.+?(?:src="(.*?)"|>))' . // It fetches the src attribute.
-			'(?=.+?(?:data-ignore="(.*?)"|>))' . // and the data-ignore attribute of the tag.
+			'(?=.+?(?:data-ignore=["\'](.*?)["\']|>))' . // and the data-ignore attribute of the tag.
 			'[^>]*?>' . // Finally we finish the parsing of the opening tag
 			'.*?<\/script>\s*' . // until the closing tag.
 			'/is';

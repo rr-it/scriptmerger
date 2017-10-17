@@ -196,7 +196,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 			'(?=.+?(?:href="(.*?)"|>))' . // and the href attribute
 			'(?=.+?(?:rel="(.*?)"|>))' . // and the rel attribute
 			'(?=.+?(?:title="(.*?)"|>))' . // and the title attribute of the tag.
-			'(?=.+?(?:data-ignore="(.*?)"|>))' . // and the data-ignore attribute of the tag.
+			'(?=.+?(?:data-ignore=["\'](.*?)["\']|>))' . // and the data-ignore attribute of the tag.
 			'(?:[^>]+?\.css[^>]+?\/?>' . // Continue parsing from \1 to the closing tag.
 			'|le[^>]*?>[^>]+?<\/style>)\s*' .
 			'/is';
