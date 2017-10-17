@@ -10,7 +10,7 @@
  * writing. "version" and "dependencies" must not be touched!
  ***************************************************************/
 
-$EM_CONF[$_EXTKEY] = array (
+$EM_CONF[$_EXTKEY] = [
 	'title' => 'CSS/Javascript Minificator, Compressor And Concatenator',
 	'description' => 'This extension minimizes the http requests by concatenating your css and javascript. Furthermore the result can be minified and compressed. This whole process is highly configurable and is partly based on the "minify", "jsminplus" and "jsmin" projects.',
 	'category' => 'fe',
@@ -23,22 +23,21 @@ $EM_CONF[$_EXTKEY] = array (
 	'author_email' => 'stefan@sgalinski.de',
 	'author_company' => '',
 	'constraints' =>
-	array (
-		'depends' =>
-		array (
-			'php' => '5.3.0-7.1.99',
-			'typo3' => '6.2.0-8.7.99',
-		),
-		'conflicts' =>
-		array (
-			'speedy' => '',
-			'queo_speedup' => '',
-			'js_css_optimizer' => '',
-			'minify' => '',
-		),
-		'suggests' =>
-		array (
-		),
-	),
-);
+		[
+			'depends' =>
+				[
+					'typo3' => '6.2.0-8.7.99',
+				],
+			'conflicts' =>
+				[
+					'speedy' => '',
+					'queo_speedup' => '',
+					'js_css_optimizer' => '',
+					'minify' => '',
+				],
+			'suggests' =>
+				[
+				],
+		],
+];
 
