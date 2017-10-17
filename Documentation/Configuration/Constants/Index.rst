@@ -289,12 +289,21 @@ Use this option to define the final position of the merged files and any other o
 were processed by the scriptmerger. The value is used inside a regular expression, but you cannot use any
 wildcards or such stuff.
 
-javascript.deferLoading
+javascript.asyncLoading
 """""""""""""""""""""""
 
-:typoscript:`plugin.tx_scriptmerger.javascript.deferLoading=` :ref:`t3tsref:data-type-boolean`
+:typoscript:`plugin.tx_scriptmerger.javascript.asyncLoading=` :ref:`t3tsref:data-type-boolean`
 
-If you want to load your javascript always after the page onload event, then you are encouraged to activate this option.
+This option is set to false by default.
+
+If set to true, the merged JavaScript file will be included with the 'async' attribute set. This will prevent the main
+thread from being blocked while downloading your JavaScript. Be aware that enabling that option requires that all
+JavaScript that is dependent on the contents of the merged file must not be executed before the DOMContentLoaded event
+(e.g. inline JavaScript snippets).
+
+Also note that this flag does not enable 'deferred' loading of scripts. asyncLoading will download your JS asynchronously
+but execute it as soon as it is loaded. If you need scripts to also be executed only after the page is ready, add a
+'data-ignore="1' and 'defer' attribute to your script-tag.
 
 Additional Information
 ^^^^^^^^^^^^^^^^^^^^^^

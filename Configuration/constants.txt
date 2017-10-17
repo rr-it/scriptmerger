@@ -39,7 +39,7 @@ plugin.tx_scriptmerger {
 		mergedHeadFilePosition =
 		mergedBodyFilePosition = </body>
 		addContentInDocument = 0
-		deferLoading = 0
+		asyncLoading = 0
 
 		minify {
 			enable = 1

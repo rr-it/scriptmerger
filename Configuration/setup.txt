@@ -46,7 +46,7 @@ plugin.tx_scriptmerger {
 		mergedHeadFilePosition = {$plugin.tx_scriptmerger.javascript.mergedHeadFilePosition}
 		mergedBodyFilePosition = {$plugin.tx_scriptmerger.javascript.mergedBodyFilePosition}
 		addContentInDocument = {$plugin.tx_scriptmerger.javascript.addContentInDocument}
-		deferLoading = {$plugin.tx_scriptmerger.javascript.deferLoading}
+		asyncLoading = {$plugin.tx_scriptmerger.javascript.asyncLoading}
 
 		minify {
 			enable = {$plugin.tx_scriptmerger.javascript.minify.enable}

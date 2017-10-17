@@ -414,6 +414,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 	 */
 	protected function writeToDocument() {
 		$shouldBeAddedInDoc = $this->configuration['javascript.']['addContentInDocument'] === '1';
+		$asyncLoading = (bool) $this->configuration['javascript.']['asyncLoading'];
 		foreach ($this->javascript as $section => $javascriptBySection) {
 			ksort($javascriptBySection);
 			if (!is_array($javascriptBySection)) {
@@ -433,7 +434,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					$content = $javascriptProperties['original'];
 				} elseif ($javascriptProperties['addInDocument'] || $shouldBeAddedInDoc) {
 					$content = "\t" .
-						'<script async type="text/javascript">' . LF .
+						'<script type="text/javascript">' . LF .
 						"\t" . '/* <![CDATA[ */' . LF .
 						"\t" . $javascriptProperties['content'] . LF .
 						"\t" . '/* ]]> */' . LF .
@@ -444,28 +445,8 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 						$file = $GLOBALS['TSFE']->absRefPrefix .
 							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
 					}
-
-					if ($this->configuration['javascript.']['deferLoading'] === '1') {
-						$content = '
-	<script async type="text/javascript" defer="defer">
-		function downloadJSAtOnload() {
-			var element = document.createElement("script");
-			element.src = "' . $file . '";
-			document.body.appendChild(element);
-		}
-
-		if (window.addEventListener) {
-			window.addEventListener("load", downloadJSAtOnload, false);
-		} else if (window.attachEvent) {
-			window.attachEvent("onload", downloadJSAtOnload);
-		} else {
-			window.onload = downloadJSAtOnload;
-		}
-</script>';
-					} else {
-						$content = "\t" .
-							'<script async type="text/javascript" src="' . $file . '"></script>' . LF;
-					}
+					$content = "\t" .
+						'<script ' . ($asyncLoading ? 'async' : '') . ' type="text/javascript" src="' . $file . '"></script>' . LF;
 				}
 
 				if ($pattern === '' || $javascriptProperties['merge-ignore']) {
@@ -486,5 +467,3 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		$GLOBALS['TSFE']->content = preg_replace($pattern, '', $GLOBALS['TSFE']->content);
 	}
 }
-
-?>
