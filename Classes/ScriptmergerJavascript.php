@@ -277,6 +277,8 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					$this->javascript[$section][$i]['file'] = $source;
 					$this->javascript[$section][$i]['content'] = $content;
 
+//					debug($content);
+
 					// get base name for later usage
 					// base name without file prefix and prefixed hash of the content
 					$filename = basename($source);
@@ -320,20 +322,20 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
 						$this->javascript[$section][$i]['useOriginalCodeLine'] = TRUE;
 						$this->javascript[$section][$i]['addInDocument'] = TRUE;
-						$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
+						$this->javascript[$section][$i]['content'] = $scriptTagContent;
 						continue;
 					}
 
 					// save the content into a temporary file
-					$hash = md5($javascriptContent[1][0]);
+					$hash = md5($scriptTagContent);
 					$source = $this->tempDirectories['temp'] . 'inDocument-' . $hash;
 
 					if (!file_exists($source . '.js')) {
-						$this->writeFile($source . '.js', $javascriptContent[1][0]);
+						$this->writeFile($source . '.js', $scriptTagContent);
 					}
 
 					$this->javascript[$section][$i]['file'] = $source . '.js';
-					$this->javascript[$section][$i]['content'] = $javascriptContent[1][0];
+					$this->javascript[$section][$i]['content'] = $scriptTagContent;
 					$this->javascript[$section][$i]['basename'] = basename($source);
 				}
 			}
