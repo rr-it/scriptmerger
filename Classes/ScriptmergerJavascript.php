@@ -277,8 +277,6 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					$this->javascript[$section][$i]['file'] = $source;
 					$this->javascript[$section][$i]['content'] = $content;
 
-//					debug($content);
-
 					// get base name for later usage
 					// base name without file prefix and prefixed hash of the content
 					$filename = basename($source);
@@ -307,7 +305,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					}
 
 					// we don't need to continue if it was an empty script tag
-					if ($scriptTagContent === '') {
+					if ($scriptTagContent === '' && ($scriptTagType === 'text/javascript' || $scriptTagType === '')) {
 						unset($this->javascript[$section][$i]);
 						continue;
 					}
