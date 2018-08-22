@@ -25,6 +25,9 @@ namespace SGalinski\Scriptmerger;
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
+use SGalinski\Scriptmerger\Exceptions\BrokenIntegrityException;
+use TYPO3\CMS\Core\Log\Logger;
+use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 /**
@@ -44,6 +47,11 @@ abstract class ScriptmergerBase {
 	protected $configuration;
 
 	/**
+	 * @var Logger
+	 */
+	protected $logger;
+
+	/**
 	 * Constructor
 	 */
 	public function __construct() {
@@ -56,10 +64,11 @@ abstract class ScriptmergerBase {
 		);
 
 		foreach ($this->tempDirectories as $directory) {
-			if (!is_dir($directory)) {
+			if (!\is_dir($directory)) {
 				GeneralUtility::mkdir($directory);
 			}
 		}
+		$this->logger = GeneralUtility::makeInstance(LogManager::class)->getLogger(__CLASS__);
 	}
 
 	/**
@@ -80,35 +89,66 @@ abstract class ScriptmergerBase {
 	abstract public function process();
 
 	/**
+	 * Get a file from local or external source
+	 *
+	 * @param string $source The sources path
+	 * @param bool $returnContent Return the contents of the file
+	 * @param string $integrity Optional integrity hash
+	 * @return string
+	 * @throws BrokenIntegrityException
+	 */
+	protected function getFile($source, $returnContent = FALSE, $integrity = '') {
+		$fileExists = \file_exists($source);
+		if ($fileExists) {
+			$content = \file_get_contents($source);
+			if ($integrity !== '' && !$this->checkIntegrity($integrity, $content)) {
+				throw new BrokenIntegrityException("The file \"$source\" has failed the integrity check!");
+			}
+		} else {
+			$content = $this->getExternalFile($source, $returnContent, $integrity);
+		}
+		if (!$returnContent) {
+			$content = $source;
+		}
+		return $content;
+	}
+
+	/**
 	 * Gets a file from an external resource (e.g. http://) and caches them
 	 *
 	 * @param string $source Source address
 	 * @param boolean $returnContent
+	 * @param string $integrity Optional integrity hash
 	 * @return string cache file or content (depends on the parameter)
+	 * @throws BrokenIntegrityException
 	 */
-	protected function getExternalFile($source, $returnContent = FALSE) {
-		$filename = basename($source);
-		$hash = md5($source);
+	protected function getExternalFile($source, $returnContent = FALSE, $integrity = '') {
+		$filename = \basename($source);
+		$hash = \md5($source);
 		$cacheFile = $this->tempDirectories['temp'] . $filename . '-' . $hash;
 		$externalFileCacheLifetime = (int) $this->configuration['externalFileCacheLifetime'];
 		$cacheLifetime = ($externalFileCacheLifetime > 0) ? $externalFileCacheLifetime : 3600;
 
 		// check the age of the cache file (also fails with non-existent file)
 		$content = '';
-		if ((int) @filemtime($cacheFile) <= ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
+		if ((int) @\filemtime($cacheFile) <= ($GLOBALS['EXEC_TIME'] - $cacheLifetime)) {
 			if ($source{0} === '/' && $source{1} === '/') {
-				$protocol = stripos($_SERVER['SERVER_PROTOCOL'], 'https') === TRUE ? 'https:' : 'http:';
+				$protocol = \stripos($_SERVER['SERVER_PROTOCOL'], 'https') === TRUE ? 'https:' : 'http:';
 				$source = $protocol . $source;
 			}
 
-			$content = GeneralUtility::getURL($source);
+			$content = GeneralUtility::getUrl($source);
 			if ($content !== FALSE) {
-				$this->writeFile($cacheFile, $content);
+				if ($integrity === '' || $this->checkIntegrity($integrity, $content)) {
+					$this->writeFile($cacheFile, $content);
+				} else {
+					throw new BrokenIntegrityException("The file \"$source\" has failed the integrity check!");
+				}
 			} else {
 				$cacheFile = '';
 			}
 		} elseif ($returnContent) {
-			$content = file_get_contents($cacheFile);
+			$content = $this->getFile($cacheFile, TRUE, $integrity);
 		}
 
 		$returnValue = $cacheFile;
@@ -117,6 +157,24 @@ abstract class ScriptmergerBase {
 		}
 
 		return $returnValue;
+	}
+
+	/**
+	 * Check the integrity of the given content, valid hash types are sha256, sha384 and sha512
+	 *
+	 * @param string $integrityHash The integrity hash to compare the content against
+	 * @param string $content The content to check its integrity
+	 * @return bool
+	 * @see https://developer.mozilla.org/en-US/docs/Web/Security/Subresource_Integrity
+	 */
+	protected function checkIntegrity($integrityHash, $content) {
+		list($hashType, $base64IntegrityHash) = \explode('-', $integrityHash, 2);
+		$validIntegrity = FALSE;
+		if (\in_array($hashType, \hash_algos())) {
+			$contentHash = \base64_encode(\hash($hashType, $content, TRUE));
+			$validIntegrity = $contentHash === $base64IntegrityHash;
+		}
+		return $validIntegrity;
 	}
 
 	/**
@@ -131,7 +189,7 @@ abstract class ScriptmergerBase {
 
 		// hook here for other file system operations like syncing to other servers etc.
 		$hooks = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['scriptmerger']['writeFilePostHook'];
-		if (is_array($hooks)) {
+		if (\is_array($hooks)) {
 			foreach ($hooks as $classReference) {
 				$hookObject = GeneralUtility::getUserObj($classReference);
 				$hookObject->writeFilePostHook($file, $content, $this);

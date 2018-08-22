@@ -26,6 +26,7 @@ namespace SGalinski\Scriptmerger;
  ***************************************************************/
 
 use JShrink\Minifier;
+use SGalinski\Scriptmerger\Exceptions\BrokenIntegrityException;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -153,6 +154,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			'<script' . // This expression includes any script nodes.
 			'(?=.+?(?:src="(.*?)"|>))' . // It fetches the src attribute.
 			'(?=.+?(?:data-ignore=["\'](.*?)["\']|>))' . // and the data-ignore attribute of the tag.
+			'(?=.+?(?:integrity="(.*?)"|>))' . // and the integrity attribute
 			'[^>]*?>' . // Finally we finish the parsing of the opening tag
 			'.*?<\/script>\s*' . // until the closing tag.
 			'/is';
@@ -224,17 +226,29 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				$this->javascript[$section][$i]['original'] = $results[0][$i];
 
 				if ($isSourceFromMainAttribute) {
-					// try to fetch the content of the css file
-					$file = $source;
-					if ($GLOBALS['TSFE']->absRefPrefix !== '' && strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
-						$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
+					// try to fetch the content of the file
+					$localFile = $source;
+					if ($GLOBALS['TSFE']->absRefPrefix !== '' && \strpos($localFile, $GLOBALS['TSFE']->absRefPrefix) === 0) {
+						$localFile = \substr($localFile, \strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 					}
-					$file = PATH_site . $file;
-
-					if (file_exists($file)) {
-						$content = file_get_contents($file);
+					$localFile = PATH_site . $localFile;
+					if (\file_exists($localFile)) {
+						$file = $localFile;
 					} else {
-						$content = $this->getExternalFile($source, TRUE);
+						$file = $source;
+					}
+					$integrity = $results[3][$i];
+					try {
+						$content = $this->getFile($file, TRUE, $integrity);
+					} catch (BrokenIntegrityException $ex) {
+						// The file integrity is broken, this could mean, that the script target got hacked and is not
+						// safe anymore. We need to abort merging of this script and report the issue
+						$this->logger->warning($ex->getMessage(), [
+							'file' => $file,
+							'integrity' => $integrity,
+							'tag' => $results[0][$i]
+						]);
+						$content = '';
 					}
 
 					// ignore this file if the content could not be fetched
