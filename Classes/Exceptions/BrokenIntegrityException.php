@@ -1,4 +1,7 @@
 <?php
+
+namespace SGalinski\Scriptmerger\Exceptions;
+
 /**
  *
  * Copyright notice
@@ -23,8 +26,6 @@
  *
  * This copyright notice MUST APPEAR in all copies of the script!
  */
-
-namespace SGalinski\Scriptmerger\Exceptions;
 
 use TYPO3\CMS\Core\Exception;
 
