@@ -44,6 +44,11 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 class SysLogWriter extends AbstractWriter {
 
 	/**
+	 * @var string
+	 */
+	protected $tableName = 'sys_log';
+
+	/**
 	 * Writes the log record
 	 *
 	 * @param LogRecord $record Log record
@@ -76,8 +81,8 @@ class SysLogWriter extends AbstractWriter {
 		];
 
 		GeneralUtility::makeInstance(ConnectionPool::class)
-			->getConnectionForTable('sys_log')
-			->insert('sys_log', $fieldValues);
+			->getConnectionForTable($this->tableName)
+			->insert($this->tableName, $fieldValues);
 
 		return $this;
 	}
