@@ -21,4 +21,13 @@ if (TYPO3_MODE == 'FE') {
 $TYPO3_CONF_VARS['FE']['versionNumberInFilename'] = '';
 $TYPO3_CONF_VARS['FE']['compressionLevel'] = '0';
 
+// Configure the logger for scriptmerger errors
+$GLOBALS['TYPO3_CONF_VARS']['LOG']['SGalinski']['Scriptmerger'] = [
+	'writerConfiguration' => [
+		\TYPO3\CMS\Core\Log\LogLevel::WARNING => [
+			\SGalinski\Scriptmerger\Log\Writer\SysLogWriter::class => [],
+			\TYPO3\CMS\Core\Log\Writer\FileWriter::class => []
+		]
+	]
+];
 ?>

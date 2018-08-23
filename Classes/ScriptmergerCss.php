@@ -25,6 +25,7 @@ namespace SGalinski\Scriptmerger;
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
+use SGalinski\Scriptmerger\Exceptions\BrokenIntegrityException;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 
 /**
@@ -197,6 +198,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 			'(?=.+?(?:rel="(.*?)"|>))' . // and the rel attribute
 			'(?=.+?(?:title="(.*?)"|>))' . // and the title attribute of the tag.
 			'(?=.+?(?:data-ignore=["\'](.*?)["\']|>))' . // and the data-ignore attribute of the tag.
+			'(?=.+?(?:integrity="(.*?)"|>))' . // and the integrity attribute
 			'(?:[^>]+?\.css[^>]+?\/?>' . // Continue parsing from \1 to the closing tag.
 			'|le[^>]*?>[^>]+?<\/style>)\s*' .
 			'/is';
@@ -275,16 +277,29 @@ class ScriptmergerCss extends ScriptmergerBase {
 				$this->css[$relation][$media][$i]['content'] = $content;
 				$this->css[$relation][$media][$i]['basename'] = basename($source);
 			} elseif ($source !== '') {
-				// try to fetch the content of the css file
-				$file = $source;
-				if ($GLOBALS['TSFE']->absRefPrefix !== '' && strpos($file, $GLOBALS['TSFE']->absRefPrefix) === 0) {
-					$file = substr($file, strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
+				$localFile = $source;
+				if ($GLOBALS['TSFE']->absRefPrefix !== '' && \strpos($localFile, $GLOBALS['TSFE']->absRefPrefix) === 0) {
+					$localFile = \substr($localFile, \strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 				}
-				if (file_exists(PATH_site . $file)) {
-					$content = \Minify_ImportProcessor::process(PATH_site . $file);
+				$localFile = PATH_site . $localFile;
+				if (\file_exists($localFile)) {
+					$file = $localFile;
 				} else {
-					$tempFile = $this->getExternalFile($source);
+					$file = $source;
+				}
+				$integrity = $cssTags[7][$i];
+				try {
+					$tempFile = $this->getFile($file, FALSE, $integrity);
 					$content = \Minify_ImportProcessor::process($tempFile);
+				} catch (BrokenIntegrityException $exception) {
+					// The file integrity is broken, this could mean, that the script target got hacked and is not
+					// safe anymore. We need to abort merging of this script and report the issue
+					$this->logger->warning($exception->getMessage(), [
+						'file' => $file,
+						'integrity' => $integrity,
+						'tag' => $cssTags[0][$i]
+					]);
+					$content = '';
 				}
 
 				// ignore this file if the content could not be fetched
