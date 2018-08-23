@@ -240,10 +240,10 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					$integrity = $results[3][$i];
 					try {
 						$content = $this->getFile($file, TRUE, $integrity);
-					} catch (BrokenIntegrityException $ex) {
+					} catch (BrokenIntegrityException $exception) {
 						// The file integrity is broken, this could mean, that the script target got hacked and is not
 						// safe anymore. We need to abort merging of this script and report the issue
-						$this->logger->warning($ex->getMessage(), [
+						$this->logger->warning($exception->getMessage(), [
 							'file' => $file,
 							'integrity' => $integrity,
 							'tag' => $results[0][$i]

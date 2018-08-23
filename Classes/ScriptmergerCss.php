@@ -291,10 +291,10 @@ class ScriptmergerCss extends ScriptmergerBase {
 				try {
 					$tempFile = $this->getFile($file, FALSE, $integrity);
 					$content = \Minify_ImportProcessor::process($tempFile);
-				} catch (BrokenIntegrityException $ex) {
+				} catch (BrokenIntegrityException $exception) {
 					// The file integrity is broken, this could mean, that the script target got hacked and is not
 					// safe anymore. We need to abort merging of this script and report the issue
-					$this->logger->warning($ex->getMessage(), [
+					$this->logger->warning($exception->getMessage(), [
 						'file' => $file,
 						'integrity' => $integrity,
 						'tag' => $cssTags[0][$i]
