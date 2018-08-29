@@ -169,12 +169,23 @@ abstract class ScriptmergerBase {
 	 */
 	protected function checkIntegrity($integrityHash, $content) {
 		list($hashType, $base64IntegrityHash) = \explode('-', $integrityHash, 2);
-		$validIntegrity = FALSE;
+		$contentHash = $this->calculateIntegrity($content, $hashType);
+		return $contentHash === $base64IntegrityHash;
+	}
+
+	/**
+	 * Calculate the integrity hash of the given content
+	 *
+	 * @param string $content The content of a file
+	 * @param string $hashType The type of the hashing method
+	 * @return string
+	 */
+	protected function calculateIntegrity($content, $hashType = 'sha512') {
+		$contentHash = '';
 		if (\in_array($hashType, \hash_algos())) {
 			$contentHash = \base64_encode(\hash($hashType, $content, TRUE));
-			$validIntegrity = $contentHash === $base64IntegrityHash;
 		}
-		return $validIntegrity;
+		return $contentHash;
 	}
 
 	/**

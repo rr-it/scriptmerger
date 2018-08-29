@@ -122,12 +122,14 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					$newFile = $this->compressFile($properties);
 				}
 
+				$integrityType = 'sha512';
 				// add new entry
 				$this->javascript[$section][] = array(
 					'file' => $newFile,
 					'content' => $properties['content'],
 					'basename' => $properties['basename'],
 					'position-key' => $positionOfMergedFile,
+					'integrity' => $integrityType . '-' . $this->calculateIntegrity($properties['content'])
 				);
 			}
 		}
@@ -477,7 +479,11 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
 					}
 					$content = "\t" .
-						'<script ' . ($asyncLoading ? 'async' : '') . ' type="text/javascript" src="' . $file . '"></script>' . LF;
+						'<script ' . ($asyncLoading ? 'async' : '') . ' 
+							type="text/javascript" 
+							src="' . $file . '" 
+							integrity="' . $javascriptProperties['integrity'] . '" 
+							crossorigin="anonymous"></script>' . LF;
 				}
 
 				if ($pattern === '' || $javascriptProperties['merge-ignore']) {

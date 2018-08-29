@@ -141,13 +141,14 @@ class ScriptmergerCss extends ScriptmergerBase {
 					) {
 						$newFile = $this->compressFile($properties);
 					}
-
+					$integrityType = 'sha512';
 					// add new entry
 					$this->css[$relation][$media][] = array(
 						'file' => $newFile,
 						'content' => $properties['content'],
 						'basename' => $properties['basename'],
 						'position-key' => $positionOfMergedFile,
+						'integrity' => $integrityType . '-' . $this->calculateIntegrity($properties['content'])
 					);
 				}
 			}
@@ -439,8 +440,12 @@ class ScriptmergerCss extends ScriptmergerBase {
 
 						$title = (trim($cssProperties['title']) !== '' ?
 							'title="' . $cssProperties['title'] . '"' : '');
-						$content = LF . "\t" . '<link rel="' . $relation . '" type="text/css" ' .
-							'media="' . $media . '" ' . $title . ' href="' . $file . '" />' . LF;
+						$content = LF . "\t" . '<link rel="' . $relation . '" 
+							type="text/css" ' .
+							'media="' . $media . '" ' . $title . ' 
+							href="' . $file . '" 
+							integrity="' . $cssProperties['integrity'] . '"
+							crossorigin="anonymous"/>' . LF;
 					}
 
 					if ($pattern === '' || $cssProperties['merge-ignore']) {
