@@ -440,12 +440,12 @@ class ScriptmergerCss extends ScriptmergerBase {
 
 						$title = (trim($cssProperties['title']) !== '' ?
 							'title="' . $cssProperties['title'] . '"' : '');
-						$content = LF . "\t" . '<link rel="' . $relation . '" 
-							type="text/css" ' .
-							'media="' . $media . '" ' . $title . ' 
-							href="' . $file . '" 
-							integrity="' . $cssProperties['integrity'] . '"
-							crossorigin="anonymous"/>' . LF;
+						$content = LF . "\t" . '<link rel="' . $relation . '" '
+							. 'type="text/css" '
+							. 'media="' . $media . '" ' . $title . ' '
+							. 'href="' . $file . '"'
+							. 'integrity="' . $cssProperties['integrity'] . '" '
+							. 'crossorigin="anonymous"/>' . LF;
 					}
 
 					if ($pattern === '' || $cssProperties['merge-ignore']) {

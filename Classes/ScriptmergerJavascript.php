@@ -479,11 +479,11 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
 					}
 					$content = "\t" .
-						'<script ' . ($asyncLoading ? 'async' : '') . ' 
-							type="text/javascript" 
-							src="' . $file . '" 
-							integrity="' . $javascriptProperties['integrity'] . '" 
-							crossorigin="anonymous"></script>' . LF;
+						'<script ' . ($asyncLoading ? 'async ' : '')
+							. 'type="text/javascript" '
+							. 'src="' . $file . '" '
+							. 'integrity="' . $javascriptProperties['integrity'] . '" '
+							. 'crossorigin="anonymous"></script>' . LF;
 				}
 
 				if ($pattern === '' || $javascriptProperties['merge-ignore']) {
