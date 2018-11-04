@@ -34,9 +34,10 @@ javascript.addContentInDocument_                      :ref:`t3tsref:data-type-bo
 javascript.parseBody_                                 :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.doNotRemoveInDocInBody_                    :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.doNotRemoveInDocInHead_                    :ref:`t3tsref:data-type-boolean`           no                      0
-javascript.mergedHeadFilePosition_                    :ref:`t3tsref:data-type-string`            no                      *empty*
+javascript.mergedHeadFilePosition_                    :ref:`t3tsref:data-type-string`            no                      </head>
 javascript.mergedBodyFilePosition_                    :ref:`t3tsref:data-type-string`            no                      </body>
-javascript.deferLoading_                              :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.asyncLoading_                              :ref:`t3tsref:data-type-boolean`           no                      0
+javascript.deferLoadingInHead_                        :ref:`t3tsref:data-type-boolean`           no                      0
 javascript.minify.enable_                             :ref:`t3tsref:data-type-boolean`           no                      1
 javascript.minify.ignore_                             :ref:`t3tsref:data-type-string`            no                      \?,\.min\.
 javascript.minify.useJSMinPlus_                       :ref:`t3tsref:data-type-boolean`           no                      1
@@ -304,6 +305,19 @@ JavaScript that is dependent on the contents of the merged file must not be exec
 Also note that this flag does not enable 'deferred' loading of scripts. asyncLoading will download your JS asynchronously
 but execute it as soon as it is loaded. If you need scripts to also be executed only after the page is ready, add a
 'data-ignore="1' and 'defer' attribute to your script-tag.
+
+javascript.deferLoadingInHead
+"""""""""""""""""""""""""""""
+
+:typoscript:`plugin.tx_scriptmerger.javascript.deferLoadingInHead=` :ref:`t3tsref:data-type-boolean`
+
+This option is set to false by default.
+
+If set to true the defer attribute will be added to javascript inside the head.
+
+NOTE: If set asyncLoading will be set to FALSE and all JS is loaded inside the HEAD. For details see:
+
+https://flaviocopes.com/javascript-async-defer/
 
 Additional Information
 ^^^^^^^^^^^^^^^^^^^^^^

@@ -46,7 +46,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 	 *
 	 * @var array
 	 */
-	protected $javascript = array();
+	protected $javascript = [];
 
 	/**
 	 * Controller for the processing of the javascript files.
@@ -58,6 +58,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		$this->getFiles();
 
 		// minify, compress and merging
+		$gzCompressExists = \function_exists('gzcompress');
 		foreach ($this->javascript as $section => $javascriptBySection) {
 			$mergedContent = '';
 			$positionOfMergedFile = NULL;
@@ -65,15 +66,15 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				$newFile = '';
 
 				// file should be minified
-				if ($this->configuration['javascript.']['minify.']['enable'] === '1' &&
-					!$javascriptProperties['minify-ignore']
+				if (!$javascriptProperties['minify-ignore'] &&
+					$this->configuration['javascript.']['minify.']['enable'] === '1'
 				) {
 					$newFile = $this->minifyFile($javascriptProperties);
 				}
 
 				// file should be merged
-				if ($this->configuration['javascript.']['merge.']['enable'] === '1' &&
-					!$javascriptProperties['merge-ignore']
+				if (!$javascriptProperties['merge-ignore'] &&
+					$this->configuration['javascript.']['merge.']['enable'] === '1'
 				) {
 					if ($positionOfMergedFile === NULL) {
 						$positionOfMergedFile = $javascriptProperties['position-key'];
@@ -85,8 +86,8 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				}
 
 				// file should be compressed instead?
-				if ($this->configuration['javascript.']['compress.']['enable'] === '1' &&
-					function_exists('gzcompress') && !$javascriptProperties['compress-ignore']
+				if ($gzCompressExists && !$javascriptProperties['compress-ignore'] &&
+					$this->configuration['javascript.']['compress.']['enable'] === '1'
 				) {
 					$newFile = $this->compressFile($javascriptProperties);
 				}
@@ -102,12 +103,11 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			}
 
 			// save merged content inside a new file
-			if ($this->configuration['javascript.']['merge.']['enable'] === '1' && $mergedContent !== '') {
-				// create property array
-				$properties = array(
+			if ($mergedContent !== '' && $this->configuration['javascript.']['merge.']['enable'] === '1') {
+				$properties = [
 					'content' => $mergedContent,
 					'basename' => $section . '-' . md5($mergedContent) . '.merged'
-				);
+				];
 
 				// write merged file in any case
 				$newFile = $this->tempDirectories['merged'] . $properties['basename'] . '.js';
@@ -116,21 +116,19 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				}
 
 				// file should be compressed
-				if ($this->configuration['javascript.']['compress.']['enable'] === '1' &&
-					function_exists('gzcompress')
-				) {
+				if ($gzCompressExists && $this->configuration['javascript.']['compress.']['enable'] === '1') {
 					$newFile = $this->compressFile($properties);
 				}
 
 				$integrityType = 'sha512';
 				// add new entry
-				$this->javascript[$section][] = array(
+				$this->javascript[$section][] = [
 					'file' => $newFile,
 					'content' => $properties['content'],
 					'basename' => $properties['basename'],
 					'position-key' => $positionOfMergedFile,
 					'integrity' => $integrityType . '-' . $this->calculateIntegrity($properties['content'])
-				);
+				];
 			}
 		}
 
@@ -141,15 +139,12 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 	/**
 	 * This method parses the output content and saves any found javascript files or inline code
 	 * into the "javascript" class property. The output content is cleaned up of the found results.
-	 *
-	 * @return array js files
 	 */
 	protected function getFiles() {
-		// init
-		$javascriptTags = array(
-			'head' => array(),
-			'body' => array()
-		);
+		$javascriptTags = [
+			'head' => [],
+			'body' => []
+		];
 
 		// create search pattern
 		$searchScriptsPattern = '/' .
@@ -176,35 +171,43 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			'/is';
 
 		// parse scripts in the head
-		$head = array();
+		$head = [];
 		preg_match('/<head>.+?<\/head>/is', $GLOBALS['TSFE']->content, $head);
 		$head = $oldHead = $head[0];
 
 		preg_match_all($searchScriptsPattern, $head, $javascriptTags['head']);
-		$amountOfScriptTags = count($javascriptTags['head'][0]);
+		$amountOfScriptTags = \count($javascriptTags['head'][0]);
 		if ($amountOfScriptTags) {
-			$function = create_function('', 'static $i = 0; return \'###MERGER-head\' . $i++ . \'MERGER###\';');
+			$function = function () {
+				static $i = 0;
+				return '###MERGER-head' . $i++ . 'MERGER###';
+			};
+
 			$head = preg_replace_callback($searchScriptsPattern, $function, $head, $amountOfScriptTags);
 			$GLOBALS['TSFE']->content = str_replace($oldHead, $head, $GLOBALS['TSFE']->content);
 		}
 
 		// parse scripts in the body
 		if ($this->configuration['javascript.']['parseBody'] === '1') {
-			$body = array();
+			$body = [];
 			preg_match('/<body.*>.+?<\/body>/is', $GLOBALS['TSFE']->content, $body);
 			$body = $oldBody = $body[0];
 
 			preg_match_all($searchScriptsPattern, $body, $javascriptTags['body']);
-			$amountOfScriptTags = count($javascriptTags['body'][0]);
+			$amountOfScriptTags = \count($javascriptTags['body'][0]);
 			if ($amountOfScriptTags) {
-				$function = create_function('', 'static $i = 0; return \'###MERGER-body\' . $i++ . \'MERGER###\';');
+				$function = function () {
+					static $i = 0;
+					return '###MERGER-body' . $i++ . 'MERGER###';
+				};
+
 				$body = preg_replace_callback($searchScriptsPattern, $function, $body, $amountOfScriptTags);
 				$GLOBALS['TSFE']->content = str_replace($oldBody, $body, $GLOBALS['TSFE']->content);
 			}
 		}
 
 		foreach ($javascriptTags as $section => $results) {
-			$amountOfResults = count($results[0]);
+			$amountOfResults = \count($results[0]);
 			for ($i = 0; $i < $amountOfResults; ++$i) {
 				// get source attribute
 				$source = trim($results[1][$i]);
@@ -230,7 +233,9 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				if ($isSourceFromMainAttribute) {
 					// try to fetch the content of the file
 					$localFile = $source;
-					if ($GLOBALS['TSFE']->absRefPrefix !== '' && \strpos($localFile, $GLOBALS['TSFE']->absRefPrefix) === 0) {
+					if ($GLOBALS['TSFE']->absRefPrefix !== '' &&
+						\strpos($localFile, $GLOBALS['TSFE']->absRefPrefix) === 0
+					) {
 						$localFile = \substr($localFile, \strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 					}
 					$localFile = PATH_site . $localFile;
@@ -245,16 +250,18 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					} catch (BrokenIntegrityException $exception) {
 						// The file integrity is broken, this could mean, that the script target got hacked and is not
 						// safe anymore. We need to abort merging of this script and report the issue
-						$this->logger->warning($exception->getMessage(), [
-							'file' => $file,
-							'integrity' => $integrity,
-							'tag' => $results[0][$i]
-						]);
+						$this->logger->warning(
+							$exception->getMessage(), [
+								'file' => $file,
+								'integrity' => $integrity,
+								'tag' => $results[0][$i]
+							]
+						);
 						$content = '';
 					}
 
 					// ignore this file if the content could not be fetched
-					if (trim($content) === '' || $ignoreDataFlagSet) {
+					if ($ignoreDataFlagSet || trim($content) === '') {
 						$this->javascript[$section][$i]['minify-ignore'] = TRUE;
 						$this->javascript[$section][$i]['compress-ignore'] = TRUE;
 						$this->javascript[$section][$i]['merge-ignore'] = TRUE;
@@ -303,7 +310,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				} else {
 					// scripts which are added inside the document must be parsed again
 					// to fetch the pure js code
-					$javascriptContent = array();
+					$javascriptContent = [];
 					preg_match_all($filterInDocumentPattern, $results[0][$i], $javascriptContent);
 
 					$scriptTagType = $javascriptContent[1][0];
@@ -364,7 +371,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 	 * @param array $properties properties of an entry (copy-by-reference is used!)
 	 * @return string new filename
 	 */
-	protected function minifyFile(&$properties) {
+	protected function minifyFile(&$properties): string {
 		// stop further processing if the file already exists
 		$newFile = $this->tempDirectories['minified'] . $properties['basename'] . '.min.js';
 		if (file_exists($newFile)) {
@@ -376,7 +383,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		// check for conditional compilation code to fix an issue with jsmin+
 		$hasConditionalCompilation = FALSE;
 		if ($this->configuration['javascript.']['minify.']['useJSMinPlus'] === '1') {
-			$hasConditionalCompilation = preg_match('/\/\*@cc_on/is', $properties['content']);
+			$hasConditionalCompilation = preg_match('/\/\*@cc_on/i', $properties['content']);
 		}
 
 		// minify content (the ending semicolon must be added to prevent minimisation bugs)
@@ -384,21 +391,22 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		$minifiedContent = '';
 		try {
 			if (!$hasConditionalCompilation && $this->configuration['javascript.']['minify.']['useJShrink'] === '1') {
+				/** @noinspection ClassConstantCanBeUsedInspection */
 				if (!class_exists('JShrink\Minifier', FALSE)) {
-					require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/JShrink/Minifier.php');
+					require_once ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/JShrink/Minifier.php';
 				}
 
-				$minifiedContent =  Minifier::minify($properties['content']);
+				$minifiedContent = Minifier::minify($properties['content']);
 			} elseif (!$hasConditionalCompilation && $this->configuration['javascript.']['minify.']['useJSMinPlus'] === '1') {
 				if (!class_exists('JSMinPlus', FALSE)) {
-					require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/jsminplus.php');
+					require_once ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/jsminplus.php';
 				}
 
 				$minifiedContent = \JSMinPlus::minify($properties['content']);
 
 			} else {
 				if (!class_exists('JSMin', FALSE)) {
-					require_once(ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/jsmin.php');
+					require_once ExtensionManagementUtility::extPath('scriptmerger') . 'Resources/jsmin.php';
 				}
 
 				/** @noinspection PhpUndefinedClassInspection */
@@ -409,7 +417,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		}
 
 		// check if the minified content has more than two characters or more than 50 lines and no errors occurred
-		if (!$hasErrors && (strlen($minifiedContent) > 2 || count(explode(LF, $minifiedContent)) > 50)) {
+		if (!$hasErrors && (\strlen($minifiedContent) > 2 || substr_count($minifiedContent, LF) + 1 > 50)) {
 			$properties['content'] = $minifiedContent . ';';
 		} else {
 			$message = 'This javascript file could not be minified: "' . $properties['file'] . '"! ' .
@@ -429,7 +437,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 	 * @param array $properties properties of an entry (copy-by-reference is used!)
 	 * @return string new filename
 	 */
-	protected function compressFile(&$properties) {
+	protected function compressFile(&$properties): string {
 		$newFile = $this->tempDirectories['compressed'] . $properties['basename'] . '.gz.js';
 		if (file_exists($newFile)) {
 			return $newFile;
@@ -448,16 +456,24 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 	protected function writeToDocument() {
 		$shouldBeAddedInDoc = $this->configuration['javascript.']['addContentInDocument'] === '1';
 		$asyncLoading = (bool) $this->configuration['javascript.']['asyncLoading'];
+		$deferLoadingInHead = (bool) $this->configuration['javascript.']['deferLoadingInHead'];
+		if ($deferLoadingInHead) {
+			$asyncLoading = FALSE;
+		}
 		foreach ($this->javascript as $section => $javascriptBySection) {
 			ksort($javascriptBySection);
-			if (!is_array($javascriptBySection)) {
+			if (!\is_array($javascriptBySection)) {
 				continue;
 			}
 
 			// addBeforeBody was deprecated in version 4.0.0 and can be removed later on
 			$pattern = '';
 			if ($section === 'body' || $this->configuration['javascript.']['addBeforeBody'] === '1') {
-				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . '/i';
+				if ($deferLoadingInHead) {
+					$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
+				} else {
+					$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . '/i';
+				}
 			} elseif (trim($this->configuration['javascript.']['mergedHeadFilePosition']) !== '') {
 				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
 			}
@@ -465,7 +481,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			foreach ($javascriptBySection as $javascriptProperties) {
 				if ($javascriptProperties['useOriginalCodeLine']) {
 					$content = $javascriptProperties['original'];
-				} elseif ($javascriptProperties['addInDocument'] || $shouldBeAddedInDoc) {
+				} elseif ($shouldBeAddedInDoc || $javascriptProperties['addInDocument']) {
 					$content = "\t" .
 						'<script type="text/javascript">' . LF .
 						"\t" . '/* <![CDATA[ */' . LF .
@@ -479,11 +495,11 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
 					}
 					$content = "\t" .
-						'<script ' . ($asyncLoading ? 'async ' : '')
-							. 'type="text/javascript" '
-							. 'src="' . $file . '" '
-							. 'integrity="' . $javascriptProperties['integrity'] . '" '
-							. 'crossorigin="anonymous"></script>' . LF;
+						'<script ' . ($asyncLoading ? 'async ' : '') . ($deferLoadingInHead ? 'defer ' : '')
+						. 'type="text/javascript" '
+						. 'src="' . $file . '" '
+						. 'integrity="' . $javascriptProperties['integrity'] . '" '
+						. 'crossorigin="anonymous"></script>' . LF;
 				}
 
 				if ($pattern === '' || $javascriptProperties['merge-ignore']) {
