@@ -181,7 +181,7 @@ class Minify_ImportProcessor {
 			$replacement = self::$extensionConfiguration['css.']['postUrlProcessing.']['replacement'];
 			$url = preg_replace($pattern, $replacement, $url);
 		} elseif (is_array(self::$extensionConfiguration['css.']['postUrlProcessing.'])
-			&& count(self::$extensionConfiguration['css.']['postUrlProcessing.']) > 0
+			&& !empty(self::$extensionConfiguration['css.']['postUrlProcessing.'])
 		) {
 			foreach (self::$extensionConfiguration['css.']['postUrlProcessing.'] as $configuration) {
 				if (!isset($configuration['pattern']) || !isset($configuration['replacement'])) {

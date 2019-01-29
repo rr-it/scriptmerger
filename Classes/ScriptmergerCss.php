@@ -210,7 +210,10 @@ class ScriptmergerCss extends ScriptmergerBase {
 			return;
 		}
 
-		$function = create_function('', 'static $i = 0; return \'###MERGER\' . $i++ . \'MERGER###\';');
+		$function = function () {
+			static $i = 0;
+			return '###MERGER' . $i++ . 'MERGER###';
+		};
 		$GLOBALS['TSFE']->content = preg_replace_callback(
 			$pattern, $function, $GLOBALS['TSFE']->content, $amountOfResults
 		);
