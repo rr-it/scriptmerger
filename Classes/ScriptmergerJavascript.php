@@ -27,8 +27,10 @@ namespace SGalinski\Scriptmerger;
 
 use JShrink\Minifier;
 use SGalinski\Scriptmerger\Exceptions\BrokenIntegrityException;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\VersionNumberUtility;
 
 /**
  * This class contains the parsing and replacing functionality for javascript files
@@ -238,7 +240,14 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 					) {
 						$localFile = \substr($localFile, \strlen($GLOBALS['TSFE']->absRefPrefix) - 1);
 					}
-					$localFile = PATH_site . $localFile;
+
+					if (version_compare(VersionNumberUtility::getCurrentTypo3Version(), '9.0.0', '<')) {
+						$pathSite = PATH_site;
+					} else {
+						$pathSite = Environment::getPublicPath() . '/';
+					}
+
+					$localFile = $pathSite . $localFile;
 					if (\file_exists($localFile)) {
 						$file = $localFile;
 					} else {
@@ -491,8 +500,14 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 				} else {
 					$file = $javascriptProperties['file'];
 					if (file_exists($file)) {
+						if (version_compare(VersionNumberUtility::getCurrentTypo3Version(), '9.0.0', '<')) {
+							$pathSite = PATH_site;
+						} else {
+							$pathSite = Environment::getPublicPath() . '/';
+						}
+
 						$file = $GLOBALS['TSFE']->absRefPrefix .
-							(PATH_site === '/' ? $file : str_replace(PATH_site, '', $file));
+							($pathSite === '/' ? $file : str_replace($pathSite, '', $file));
 					}
 					$content = "\t" .
 						'<script ' . ($asyncLoading ? 'async ' : '') . ($deferLoadingInHead ? 'defer ' : '')

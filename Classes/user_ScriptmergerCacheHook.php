@@ -2,6 +2,9 @@
 
 namespace SGalinski\Scriptmerger;
 
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Utility\VersionNumberUtility;
+
 /***************************************************************
  *  Copyright notice
  *
@@ -43,11 +46,17 @@ class user_ScriptmergerCacheHook {
 	 * Initializes some class variables...
 	 */
 	public function __construct() {
+		if (version_compare(VersionNumberUtility::getCurrentTypo3Version(), '9.0.0', '<')) {
+			$pathSite = PATH_site;
+		} else {
+			$pathSite = Environment::getPublicPath() . '/';
+		}
+
 		$this->tempDirectories = array(
-			PATH_site . 'typo3temp/scriptmerger/' => 0,
-			PATH_site . 'typo3temp/scriptmerger/temp/' => 0,
-			PATH_site . 'typo3temp/scriptmerger/uncompressed/' => 1209600,
-			PATH_site . 'typo3temp/scriptmerger/compressed/' => 1209600
+			$pathSite . 'typo3temp/scriptmerger/' => 0,
+			$pathSite . 'typo3temp/scriptmerger/temp/' => 0,
+			$pathSite . 'typo3temp/scriptmerger/uncompressed/' => 1209600,
+			$pathSite . 'typo3temp/scriptmerger/compressed/' => 1209600
 		);
 	}
 

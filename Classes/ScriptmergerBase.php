@@ -26,9 +26,11 @@ namespace SGalinski\Scriptmerger;
  ***************************************************************/
 
 use SGalinski\Scriptmerger\Exceptions\BrokenIntegrityException;
+use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Log\Logger;
 use TYPO3\CMS\Core\Log\LogManager;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\VersionNumberUtility;
 
 /**
  * This class contains the basic stuff required by both processors, css and javascript.
@@ -55,12 +57,18 @@ abstract class ScriptmergerBase {
 	 * Constructor
 	 */
 	public function __construct() {
+		if (version_compare(VersionNumberUtility::getCurrentTypo3Version(), '9.0.0', '<')) {
+			$pathSite = PATH_site;
+		} else {
+			$pathSite = Environment::getPublicPath() . '/';
+		}
+
 		$this->tempDirectories = array(
-			'main' => PATH_site . 'typo3temp/scriptmerger/',
-			'temp' => PATH_site . 'typo3temp/scriptmerger/temp/',
-			'minified' => PATH_site . 'typo3temp/scriptmerger/uncompressed/',
-			'compressed' => PATH_site . 'typo3temp/scriptmerger/compressed/',
-			'merged' => PATH_site . 'typo3temp/scriptmerger/uncompressed/'
+			'main' => $pathSite . 'typo3temp/scriptmerger/',
+			'temp' => $pathSite . 'typo3temp/scriptmerger/temp/',
+			'minified' => $pathSite . 'typo3temp/scriptmerger/uncompressed/',
+			'compressed' => $pathSite . 'typo3temp/scriptmerger/compressed/',
+			'merged' => $pathSite . 'typo3temp/scriptmerger/uncompressed/'
 		);
 
 		foreach ($this->tempDirectories as $directory) {
