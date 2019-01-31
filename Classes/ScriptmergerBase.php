@@ -202,7 +202,7 @@ abstract class ScriptmergerBase {
 		$hooks = $GLOBALS['TYPO3_CONF_VARS']['EXTCONF']['scriptmerger']['writeFilePostHook'];
 		if (\is_array($hooks)) {
 			foreach ($hooks as $classReference) {
-				$hookObject = GeneralUtility::getUserObj($classReference);
+				$hookObject = GeneralUtility::makeInstance($classReference);
 				$hookObject->writeFilePostHook($file, $content, $this);
 			}
 		}
