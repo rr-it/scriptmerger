@@ -32,16 +32,14 @@ call_user_func(
 			'SGalinski\Scriptmerger\user_ScriptmergerCacheHook->clearCachePostProc';
 
 		// register the minify, compress and merge processes
-		if (TYPO3_MODE == 'FE') {
-			$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-output'][] =
-				'SGalinski\Scriptmerger\user_ScriptmergerOutputHook->contentPostProcOutput';
-			$TYPO3_CONF_VARS['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-all'][] =
-				'SGalinski\Scriptmerger\user_ScriptmergerOutputHook->contentPostProcAll';
-		}
+		$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-output'][] =
+			'SGalinski\Scriptmerger\user_ScriptmergerOutputHook->contentPostProcOutput';
+		$GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['contentPostProc-all'][] =
+			'SGalinski\Scriptmerger\user_ScriptmergerOutputHook->contentPostProcAll';
 
 		// needs to be disabled for the frontend, otherwise the default exclude rule prevents any script files from merging
-		$TYPO3_CONF_VARS['FE']['versionNumberInFilename'] = '';
-		$TYPO3_CONF_VARS['FE']['compressionLevel'] = '0';
+		$GLOBALS['TYPO3_CONF_VARS']['FE']['versionNumberInFilename'] = '';
+		$GLOBALS['TYPO3_CONF_VARS']['FE']['compressionLevel'] = '0';
 
 		// Configure the logger for scriptmerger errors
 		$GLOBALS['TYPO3_CONF_VARS']['LOG']['SGalinski']['Scriptmerger'] = [

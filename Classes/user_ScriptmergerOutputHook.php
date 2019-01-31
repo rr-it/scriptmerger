@@ -25,6 +25,7 @@ namespace SGalinski\Scriptmerger;
  *  This copyright notice MUST APPEAR in all copies of the script!
  ***************************************************************/
 
+use SGalinski\Scriptmerger\Utility\ExtensionUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Frontend\Controller\TypoScriptFrontendController;
 
@@ -45,7 +46,7 @@ class user_ScriptmergerOutputHook {
 	 * @return void
 	 */
 	protected function prepareExtensionConfiguration() {
-		$this->extensionConfiguration = unserialize($GLOBALS['TYPO3_CONF_VARS']['EXT']['extConf']['scriptmerger']);
+		$this->extensionConfiguration = ExtensionUtility::getExtensionConfiguration();
 
 		$tsSetup = $GLOBALS['TSFE']->tmpl->setup['plugin.']['tx_scriptmerger.'];
 		if (is_array($tsSetup)) {
