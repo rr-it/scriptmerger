@@ -57,7 +57,7 @@ class ScriptmergerConditionalCommentPreserver {
 		$results = array();
 		preg_match('/\d+/is', $hits[0], $results);
 		$result = '';
-		if (count($results) > 0) {
+		if (!empty($results)) {
 			$result = $this->conditionalComments[$results[0]];
 		}
 		return $result;

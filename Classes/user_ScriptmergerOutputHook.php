@@ -172,7 +172,7 @@ class user_ScriptmergerOutputHook {
 		}
 
 		if (is_array($this->extensionConfiguration['urlRegularExpressions.']) &&
-			count($this->extensionConfiguration['urlRegularExpressions.'])
+			!empty($this->extensionConfiguration['urlRegularExpressions.'])
 		) {
 			$this->executeUserDefinedRegularExpressionsOnContent(
 				$this->extensionConfiguration['urlRegularExpressions.']
