@@ -207,7 +207,7 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 		}
 
 		foreach ($javascriptTags as $section => $results) {
-			$amountOfResults = \count($results[0]);
+			$amountOfResults = isset($results[0]) ? \count($results[0]) : 0;
 			for ($i = 0; $i < $amountOfResults; ++$i) {
 				// get source attribute
 				$source = trim($results[1][$i]);
