@@ -4,6 +4,9 @@
  * @package Minify
  */
 
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Utility\VersionNumberUtility;
+
 /**
  * Linearize a CSS/JS file by including content specified by CSS import
  * declarations. In CSS files, relative URIs are fixed.
@@ -66,9 +69,17 @@ class Minify_ImportProcessor {
 
 // ##################### BEGIN TYPO3 modification
 		if (strpos($this->_currentDir, realpath(\TYPO3\CMS\Core\Utility\GeneralUtility::getIndpEnv('TYPO3_DOCUMENT_ROOT'))) === FALSE) {
-			$realPathToTYPO3 = str_replace('typo3/', '', realpath(PATH_typo3));
+			if (version_compare(VersionNumberUtility::getCurrentTypo3Version(), '9.0.0', '<')) {
+				$pathSite = PATH_site;
+				$pathTypo3 = PATH_typo3;
+			} else {
+				$pathSite = Environment::getPublicPath() . '/';
+				$pathTypo3 = Environment::getPublicPath() . '/typo3/';
+			}
+
+			$realPathToTYPO3 = str_replace('typo3/', '', realpath($pathTypo3));
 			$this->_currentDir = str_replace($realPathToTYPO3, '', $this->_currentDir);
-			$this->_currentDir = realpath(PATH_site) . '/typo3' . $this->_currentDir;
+			$this->_currentDir = realpath($pathSite) . '/typo3' . $this->_currentDir;
 		}
 // ##################### END TYPO3 modification
 
