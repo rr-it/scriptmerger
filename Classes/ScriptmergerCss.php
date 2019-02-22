@@ -461,7 +461,7 @@ class ScriptmergerCss extends ScriptmergerBase {
 						$content = LF . "\t" . '<link rel="' . $relation . '" '
 							. 'type="text/css" '
 							. 'media="' . $media . '" ' . $title . ' '
-							. 'href="' . $file . '"'
+							. 'href="' . $file . '" '
 							. 'integrity="' . $cssProperties['integrity'] . '" '
 							. 'crossorigin="anonymous"/>' . LF;
 					}
