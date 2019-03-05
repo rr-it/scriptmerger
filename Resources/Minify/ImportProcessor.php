@@ -56,6 +56,7 @@ class Minify_ImportProcessor {
 
     private function _getContent($file)
     {
+    	$originalPath = $file;
 		$file = realpath($file);
         if (! $file
             || in_array($file, self::$filesIncluded)
@@ -77,9 +78,15 @@ class Minify_ImportProcessor {
 				$pathTypo3 = Environment::getPublicPath() . '/typo3/';
 			}
 
-			$realPathToTYPO3 = str_replace('typo3/', '', realpath($pathTypo3));
-			$this->_currentDir = str_replace($realPathToTYPO3, '', $this->_currentDir);
-			$this->_currentDir = realpath($pathSite) . '/typo3' . $this->_currentDir;
+			if (!strpos($file, $pathSite) === FALSE) {
+				// fix path to the typo3 core
+				$realPathToTYPO3 = str_replace('typo3/', '', realpath($pathTypo3));
+				$this->_currentDir = str_replace($realPathToTYPO3, '', $this->_currentDir);
+				$this->_currentDir = realpath($pathSite) . '/typo3' . $this->_currentDir;
+			} else {
+				// a symlinked extension can cause realpath to make a mess, so we fetch the dirname without realpath
+				$this->_currentDir = dirname($originalPath);
+			}
 		}
 // ##################### END TYPO3 modification
 

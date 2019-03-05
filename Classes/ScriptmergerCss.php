@@ -295,14 +295,13 @@ class ScriptmergerCss extends ScriptmergerBase {
 					$pathSite = Environment::getPublicPath() . '/';
 				}
 
-				if (
-					GeneralUtility::isAllowedAbsPath($pathSite . $localFile) &&
-					\file_exists($pathSite . $localFile)
-				) {
+				$localFile = $pathSite . ltrim($localFile, '/');
+				if (\file_exists($localFile)) {
 					$file = $localFile;
 				} else {
 					$file = $source;
 				}
+
 				$integrity = $cssTags[7][$i];
 				try {
 					$tempFile = $this->getFile($file, FALSE, $integrity);
