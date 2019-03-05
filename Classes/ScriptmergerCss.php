@@ -28,6 +28,7 @@ namespace SGalinski\Scriptmerger;
 use SGalinski\Scriptmerger\Exceptions\BrokenIntegrityException;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\VersionNumberUtility;
 
 /**
@@ -294,8 +295,10 @@ class ScriptmergerCss extends ScriptmergerBase {
 					$pathSite = Environment::getPublicPath() . '/';
 				}
 
-				$localFile = $pathSite . $localFile;
-				if (\file_exists($localFile)) {
+				if (
+					GeneralUtility::isAllowedAbsPath($pathSite . $localFile) &&
+					\file_exists($pathSite . $localFile)
+				) {
 					$file = $localFile;
 				} else {
 					$file = $source;
