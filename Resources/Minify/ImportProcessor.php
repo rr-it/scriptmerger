@@ -116,7 +116,7 @@ class Minify_ImportProcessor {
         if (self::$_isCss) {
             // rewrite remaining relative URIs
             $content = preg_replace_callback(
-                '/url\\(\\s*([^\\)\\s]+)\\s*\\)/'
+                '/(?<!fill=\')url\\(\\s*([^\\)\\s]+)\\s*\\)/'
                 ,array($this, '_urlCB')
                 ,$content
             );
