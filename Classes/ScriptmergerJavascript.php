@@ -526,14 +526,14 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 						$GLOBALS['TSFE']->content
 					);
 				} else {
-                    // If 'addInDocument'/'addContentInDocument' is set, $content may contain strings like '$1' from
-                    // inline javascript.
-                    //
-                    // Can not use preg_replace($pattern, replacement: $content) here. In the replacement-parameter
-                    // every reference of the form '$n' will be replaced.
-                    // @see https://www.php.net/manual/en/function.preg-replace.php Documentation of preg_replace.
-                    $aTSFEContent = preg_split($pattern, $GLOBALS['TSFE']->content, 2, PREG_SPLIT_DELIM_CAPTURE);
-                    $GLOBALS['TSFE']->content = array_shift($aTSFEContent) . $content . array_shift($aTSFEContent) . array_shift($aTSFEContent);
+					// If 'addInDocument'/'addContentInDocument' is set, $content may contain strings like '$1' from
+					// inline javascript.
+					//
+					// Can not use preg_replace($pattern, replacement: $content) here. In the replacement-parameter
+					// every reference of the form '$n' will be replaced.
+					// @see https://www.php.net/manual/en/function.preg-replace.php Documentation of preg_replace.
+					$aTSFEContent = preg_split($pattern, $GLOBALS['TSFE']->content, 2, PREG_SPLIT_DELIM_CAPTURE);
+					$GLOBALS['TSFE']->content = array_shift($aTSFEContent) . $content . array_shift($aTSFEContent) . array_shift($aTSFEContent);
 				}
 			}
 		}
