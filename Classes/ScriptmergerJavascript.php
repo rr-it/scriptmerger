@@ -476,15 +476,16 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			}
 
 			// addBeforeBody was deprecated in version 4.0.0 and can be removed later on
+			// Use $pattern = '/(...)/i' to make preg_split(..., PREG_SPLIT_DELIM_CAPTURE) work.
 			$pattern = '';
 			if ($section === 'body' || $this->configuration['javascript.']['addBeforeBody'] === '1') {
 				if ($deferLoadingInHead) {
-					$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
+					$pattern = '/(' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . ')/i';
 				} else {
-					$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . '/i';
+					$pattern = '/(' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . ')/i';
 				}
 			} elseif (trim($this->configuration['javascript.']['mergedHeadFilePosition']) !== '') {
-				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
+				$pattern = '/(' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . ')/i';
 			}
 
 			foreach ($javascriptBySection as $javascriptProperties) {
