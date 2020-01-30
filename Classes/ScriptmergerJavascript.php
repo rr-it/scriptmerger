@@ -476,15 +476,16 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 			}
 
 			// addBeforeBody was deprecated in version 4.0.0 and can be removed later on
+			// Use $pattern = '/(...)/i' to make preg_split(..., PREG_SPLIT_DELIM_CAPTURE) work.
 			$pattern = '';
 			if ($section === 'body' || $this->configuration['javascript.']['addBeforeBody'] === '1') {
 				if ($deferLoadingInHead) {
-					$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
+					$pattern = '/(' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . ')/i';
 				} else {
-					$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . '/i';
+					$pattern = '/(' . preg_quote($this->configuration['javascript.']['mergedBodyFilePosition'], '/') . ')/i';
 				}
 			} elseif (trim($this->configuration['javascript.']['mergedHeadFilePosition']) !== '') {
-				$pattern = '/' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . '/i';
+				$pattern = '/(' . preg_quote($this->configuration['javascript.']['mergedHeadFilePosition'], '/') . ')/i';
 			}
 
 			foreach ($javascriptBySection as $javascriptProperties) {
@@ -525,7 +526,14 @@ class ScriptmergerJavascript extends ScriptmergerBase {
 						$GLOBALS['TSFE']->content
 					);
 				} else {
-					$GLOBALS['TSFE']->content = preg_replace($pattern, $content . '\0', $GLOBALS['TSFE']->content, 1);
+					// If 'addInDocument'/'addContentInDocument' is set, $content may contain strings like '$1' from
+					// inline javascript.
+					//
+					// Can not use preg_replace($pattern, replacement: $content) here. In the replacement-parameter
+					// every reference of the form '$n' will be replaced.
+					// @see https://www.php.net/manual/en/function.preg-replace.php Documentation of preg_replace.
+					$aTSFEContent = preg_split($pattern, $GLOBALS['TSFE']->content, 2, PREG_SPLIT_DELIM_CAPTURE);
+					$GLOBALS['TSFE']->content = array_shift($aTSFEContent) . $content . array_shift($aTSFEContent) . array_shift($aTSFEContent);
 				}
 			}
 		}
